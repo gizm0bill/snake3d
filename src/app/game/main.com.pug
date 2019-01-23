@@ -1,0 +1,16 @@
+three-orbit-controls( [rotateSpeed]=1, [zoomSpeed]='1.2' )
+  three-renderer( #mainRenderer )
+    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=28 positionY=52, positionZ=120 )
+    
+    three-scene
+      
+      three-axes-helper( size=64 )
+      three-grid-helper( size=128, divisions=32 )
+
+      three-point-light( color="#FFFFFF", intensity=1, distance=1000, translateX=50, translateY=50, translateZ=5 )
+
+      three-mesh
+        three-box-buffer-geometry( widthSegments=32, heightSegments=32 )
+        game-box-material
+      //- three-collada-loader( model="assets/model/flagPin.dae", [renderer]="mainRenderer" )
+        three-axes-helper( size=10 )
