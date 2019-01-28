@@ -16,7 +16,6 @@ export class PointLightDir extends ALight<THREE.PointLight> implements AfterView
 
   ngAfterViewInit()
   {
-    console.log( this.color );
     this._object = new THREE.PointLight(this.color, this.intensity, this.distance);
     super.ngAfterViewInit();
   }

@@ -1,6 +1,6 @@
 three-orbit-controls( [rotateSpeed]=1, [zoomSpeed]='1.2' )
   three-renderer( #mainRenderer )
-    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=28 positionY=52, positionZ=120 )
+    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=14 positionY=26, positionZ=60 )
     
     three-scene
       
@@ -9,8 +9,13 @@ three-orbit-controls( [rotateSpeed]=1, [zoomSpeed]='1.2' )
 
       three-point-light( color="#FFFFFF", intensity=1, distance=1000, translateX=50, translateY=50, translateZ=5 )
 
-      three-mesh
+      //- three-mesh
         three-box-buffer-geometry( widthSegments=32, heightSegments=32 )
         game-box-material
-      //- three-collada-loader( model="assets/model/flagPin.dae", [renderer]="mainRenderer" )
-        three-axes-helper( size=10 )
+
+      three-group
+        three-mesh( *ngFor=" let x of snake " )
+          three-box-buffer-geometry( widthSegments=2, heightSegments=2, depthSegments=2, width=8, height=8, depth=8 )
+          three-mesh-lambert-material( wireframe=1 )
+
+        

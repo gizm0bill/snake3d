@@ -23,19 +23,18 @@ export class MainCom implements OnDestroy, AfterViewInit
     debugger;
     this.renderer.onResize( event );
   }
-
   ngOnDestroy()
   {
   }
-
+  snake = [1, 2, 3];
   ngAfterViewInit()
   {
     this.renderer = this.childRenderer;
     // setTimeout( this.renderer.onResize.bind(renderer), 500 ); // TODO: animation end from unloaded component
-    // this.zone.runOutsideAngular( () =>
-    //   this.refreshInterval = setInterval( () =>
-    //   {
-    //     this.renderer.render();
-    //   }, 29) );
+    this.zone.runOutsideAngular( () =>
+      this.refreshInterval = setInterval( () =>
+      {
+        this.renderer.render();
+      }, 29) );
   }
 }

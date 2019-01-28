@@ -3,19 +3,17 @@ import { NgModule } from '@angular/core';
 
 import { RoutingMod } from './routing.mod';
 import { AppCom } from './com';
+import { CommonModule } from '@angular/common';
 
 @NgModule
 ({
-  declarations:
-  [
-    AppCom
-  ],
+  declarations: [ AppCom ],
   imports:
   [
+    CommonModule,
     BrowserModule,
     RoutingMod
   ],
-  providers: [],
   bootstrap: [ AppCom ]
 })
 export class AppMod { }

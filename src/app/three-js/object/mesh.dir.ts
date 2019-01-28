@@ -1,8 +1,8 @@
 import { Directive, AfterViewInit, forwardRef, ContentChild } from '@angular/core';
 import * as THREE from 'three';
-import { AObject3D } from './object-3d';
-import { AMaterial } from './material';
-import { AGeometry } from './geometry';
+import { AObject3D } from '../object-3d';
+import { AMaterial } from '../material';
+import { AGeometry } from '../geometry';
 
 @Directive
 ({

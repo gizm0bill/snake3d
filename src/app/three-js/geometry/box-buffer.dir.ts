@@ -1,5 +1,5 @@
 import { Directive, AfterViewInit, Input, forwardRef } from '@angular/core';
-import { BoxBufferGeometry } from 'three';
+import { BoxBufferGeometry, CylinderBufferGeometry } from 'three';
 import { AGeometry } from './a';
 
 @Directive

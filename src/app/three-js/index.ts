@@ -5,9 +5,10 @@ import { SceneDir } from './scene.dir';
 import { PerspectiveCameraDir } from './camera';
 import { OrbitControlsDir } from './control';
 import { PointLightDir } from './light';
-import { AxesHelperDir, GridHelperDir } from './helper';
 import { BoxBufferGeometryDir } from './geometry';
-import { MeshDir } from './mesh.dir';
+import { MaterialMod } from './material';
+import { ObjectMod } from './object';
+import { HelperMod } from './helper';
 
 @NgModule
 ({
@@ -18,9 +19,6 @@ import { MeshDir } from './mesh.dir';
     PerspectiveCameraDir,
     OrbitControlsDir,
     PointLightDir,
-    AxesHelperDir,
-    GridHelperDir,
-    MeshDir,
     BoxBufferGeometryDir,
   ],
   exports:
@@ -30,10 +28,12 @@ import { MeshDir } from './mesh.dir';
     PerspectiveCameraDir,
     OrbitControlsDir,
     PointLightDir,
-    AxesHelperDir,
-    GridHelperDir,
-    MeshDir,
     BoxBufferGeometryDir,
+
+    HelperMod,
+    ObjectMod,
+    MaterialMod,
+
   ]
 })
 export class ThreeJsMod { }

@@ -20,7 +20,7 @@
       true,
       "rxjs/Rx"
     ],
-    "import-spacing": true,
+    "import-spacing": false,
     "indent": [
       true,
       "spaces"
@@ -32,17 +32,7 @@
       140
     ],
     "member-access": false,
-    "member-ordering": [
-      true,
-      {
-        "order": [
-          "static-field",
-          "instance-field",
-          "static-method",
-          "instance-method"
-        ]
-      }
-    ],
+    "member-ordering": false,
     "no-arg": true,
     "no-bitwise": true,
     "no-console": [
