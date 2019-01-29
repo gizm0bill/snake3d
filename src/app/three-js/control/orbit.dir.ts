@@ -2,7 +2,6 @@ import { Directive, Input, AfterViewInit, OnDestroy, ContentChildren, QueryList 
 import * as THREE from 'three';
 import { PerspectiveCameraDir } from '../camera';
 import { RendererCom } from '../renderer.com';
-import '../enable.js';
 import 'three/examples/js/controls/OrbitControls';
 
 @Directive

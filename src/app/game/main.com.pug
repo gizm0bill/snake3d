@@ -1,21 +1,26 @@
+.timer {{seconds$|async}}
 three-orbit-controls( [rotateSpeed]=1, [zoomSpeed]='1.2' )
   three-renderer( #mainRenderer )
-    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=14 positionY=26, positionZ=60 )
+    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=6 positionY=6, positionZ=12 )
     
     three-scene
       
       three-axes-helper( size=64 )
-      three-grid-helper( size=128, divisions=32 )
+      three-grid-helper( size=128, divisions=128 )
 
-      three-point-light( color="#FFFFFF", intensity=1, distance=1000, translateX=50, translateY=50, translateZ=5 )
+      three-ambient-light( color='#000000' )
+
+      three-point-light( color='#FFFFFF', position=' 0, 50, 20 ' )
+      three-point-light( color='#FFFFFF', position=' 70, 30, 50 ' )
+      three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
 
       //- three-mesh
         three-box-buffer-geometry( widthSegments=32, heightSegments=32 )
         game-box-material
 
       three-group
-        three-mesh( *ngFor=" let x of snake " )
-          three-box-buffer-geometry( widthSegments=2, heightSegments=2, depthSegments=2, width=8, height=8, depth=8 )
-          three-mesh-lambert-material( wireframe=1 )
+        three-mesh( *ngFor=" let segment of snakeSegments ", [position]="segment" )
+          three-box-buffer-geometry( [width]='cubeSize', [height]='cubeSize', [depth]='cubeSize' )
+          three-mesh-lambert-material
 
         

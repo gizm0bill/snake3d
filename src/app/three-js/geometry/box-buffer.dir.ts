@@ -15,7 +15,6 @@ export class BoxBufferGeometryDir extends AGeometry<BoxBufferGeometry> implement
   @Input() widthSegments = 1;
   @Input() heightSegments = 1;
   @Input() depthSegments = 1;
-
   ngAfterViewInit()
   {
     this._object = new BoxBufferGeometry

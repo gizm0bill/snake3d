@@ -4,7 +4,7 @@ import { RendererCom } from './renderer.com';
 import { SceneDir } from './scene.dir';
 import { PerspectiveCameraDir } from './camera';
 import { OrbitControlsDir } from './control';
-import { PointLightDir } from './light';
+import { LightMod } from './light';
 import { BoxBufferGeometryDir } from './geometry';
 import { MaterialMod } from './material';
 import { ObjectMod } from './object';
@@ -18,7 +18,6 @@ import { HelperMod } from './helper';
     SceneDir,
     PerspectiveCameraDir,
     OrbitControlsDir,
-    PointLightDir,
     BoxBufferGeometryDir,
   ],
   exports:
@@ -27,9 +26,9 @@ import { HelperMod } from './helper';
     SceneDir,
     PerspectiveCameraDir,
     OrbitControlsDir,
-    PointLightDir,
     BoxBufferGeometryDir,
 
+    LightMod,
     HelperMod,
     ObjectMod,
     MaterialMod,

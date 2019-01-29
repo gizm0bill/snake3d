@@ -6,6 +6,5 @@ export abstract class ALight<T extends THREE.Light> extends AObject3D<T> impleme
 {
   @Input() color: THREE.Color;
   @Input() intensity: number;
-
   ngAfterViewInit() { super.ngAfterViewInit(); }
 }

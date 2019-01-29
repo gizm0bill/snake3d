@@ -1,4 +1,4 @@
-import { Directive, Input, forwardRef, HostListener, AfterViewInit } from '@angular/core';
+import { Directive, Input, forwardRef, HostListener, AfterViewInit, OnChanges, SimpleChanges } from '@angular/core';
 import * as THREE from 'three';
 import { ACamera } from './a';
 
@@ -7,7 +7,7 @@ import { ACamera } from './a';
   selector: 'three-perspective-camera',
   providers: [{ provide: ACamera, useExisting: forwardRef(() => PerspectiveCameraDir) }]
 })
-export class PerspectiveCameraDir implements AfterViewInit
+export class PerspectiveCameraDir implements AfterViewInit, OnChanges
 {
   camera: THREE.PerspectiveCamera;
 
@@ -29,11 +29,18 @@ export class PerspectiveCameraDir implements AfterViewInit
     this.camera.updateProjectionMatrix();
 
   }
-
   updateAspectRatio(aspect: number)
   {
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
   }
 
+  ngOnChanges( changes: SimpleChanges )
+  {
+    if ( changes.fov && changes.fov.currentValue && !changes.fov.firstChange )
+    {
+      this.camera.fov = changes.fov.currentValue;
+      this.camera.updateProjectionMatrix();
+    }
+  }
 }
