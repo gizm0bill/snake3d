@@ -1,6 +1,6 @@
-import * as THREE from 'three';
+import { Camera } from 'three';
 
-export abstract class ACamera<T extends THREE.Camera>
+export abstract class ACamera<T extends Camera>
 {
   camera: T;
   abstract updateAspectRatio(aspect: number): void;

@@ -5,7 +5,7 @@ import { AObject3D } from '../object-3d';
 @Directive
 ({
   selector: 'three-grid-helper',
-  providers: [{ provide: AObject3D, useExisting: forwardRef(() => GridHelperDir) }]
+  providers: [{ provide: AObject3D, useExisting: forwardRef( () => GridHelperDir ) }]
 })
 export class GridHelperDir extends AObject3D<THREE.AxesHelper> implements AfterViewInit
 {

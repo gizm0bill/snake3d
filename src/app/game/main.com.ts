@@ -1,9 +1,14 @@
-import { Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ViewChildren, QueryList } from '@angular/core';
+import
+{
+  Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ViewChildren, QueryList, ChangeDetectorRef
+} from '@angular/core';
 import { RendererCom } from '../three-js';
-import { Vector3, PerspectiveCamera } from 'three';
-import { interval, animationFrameScheduler, combineLatest, Subject, BehaviorSubject, timer, forkJoin } from 'rxjs';
-import { map, scan, sampleTime, tap, withLatestFrom, startWith, distinctUntilChanged, filter, sample, merge, mergeMap, concatMap, defaultIfEmpty } from 'rxjs/operators';
+import { Vector3 } from 'three';
+import { interval, animationFrameScheduler, Subject, timer, forkJoin } from 'rxjs';
+import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
+import { ThirdPersonControlDir, TrackballControlsDir, OrbitControlsDir } from '../three-js/control';
+import { PerspectiveCameraDir } from '../three-js/camera';
 
 const ls = 'document:keydown.';
 const dirs =
@@ -23,11 +28,16 @@ export class MainCom implements OnDestroy, AfterViewInit
 {
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
+  @ViewChild(OrbitControlsDir) control: OrbitControlsDir;
+  @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
 
-  private refreshInterval: any;
   cubeSize = 2;
   snakeSegments = [];
-  constructor( private readonly zone: NgZone )
+  constructor
+  (
+    private readonly zone: NgZone,
+    private readonly cdr: ChangeDetectorRef,
+  )
   {
     const start = new Vector3( 0, 0, 0 );
     this.snakeSegments = Array( 3 )
@@ -59,8 +69,14 @@ export class MainCom implements OnDestroy, AfterViewInit
   {
   }
 
+  headCube: MeshDir;
   ngAfterViewInit()
   {
+    this.headCube = this.cubes.first;
+    this.cdr.detectChanges();
+
+    this.headCube.object.add( this.camera.camera );
+
     const snake$ = this.direction$.pipe
     (
       filter( dir => undefined !== dir ),
@@ -84,6 +100,8 @@ export class MainCom implements OnDestroy, AfterViewInit
         // const camera =  ( this.renderer.cameraComponents.first.camera as PerspectiveCamera );
         // camera.position.copy( this.cubes.first.object.position.clone().sub( new Vector3(0, -5, 5) ) );
         // camera.lookAt( this.cubes.first.object.position );
+        this.control.controls.target.copy( this.headCube.object.position.clone() );
+        this.control.controls.update();
         this.zone.runOutsideAngular( () => this.renderer.render() );
       })
     ).subscribe();

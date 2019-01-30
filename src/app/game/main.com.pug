@@ -1,7 +1,12 @@
 .timer {{seconds$|async}}
-three-orbit-controls( [rotateSpeed]=1, [zoomSpeed]='1.2' )
+
+//- three-3rd-person-control( [camera]="gameCamera", [player]="headCube", #control )
+
+three-orbit-controls(  )
+
   three-renderer( #mainRenderer )
-    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=6 positionY=6, positionZ=12 )
+
+    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=6 positionY=6, positionZ=12, #gameCamera="threePerspectiveCamera" )
     
     three-scene
       
@@ -20,7 +25,7 @@ three-orbit-controls( [rotateSpeed]=1, [zoomSpeed]='1.2' )
 
       three-group
         three-mesh( *ngFor=" let segment of snakeSegments ", [position]="segment" )
-          three-box-buffer-geometry( [width]='cubeSize', [height]='cubeSize', [depth]='cubeSize' )
+          three-box-buffer-geometry( [width]='cubeSize * .75', [height]='cubeSize * .75', [depth]='cubeSize * .75' )
           three-mesh-lambert-material
 
-        
+      

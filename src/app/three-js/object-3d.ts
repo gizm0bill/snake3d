@@ -1,11 +1,10 @@
 import { AfterViewInit, Input, QueryList, ContentChildren } from '@angular/core';
 import * as THREE from 'three';
 import { Vector3, Euler } from 'three';
-import { isString } from 'util';
 
 export abstract class AObject3D<T extends THREE.Object3D> implements AfterViewInit
 {
-  @ContentChildren(AObject3D, { descendants: false }) childNodes: QueryList<AObject3D<any>>;
+  @ContentChildren( AObject3D, { descendants: false } ) childNodes: QueryList<AObject3D<any>>;
 
   private _position: Vector3 = new Vector3( 0, 0, 0 );
   get position(): Vector3 { return this._position; }

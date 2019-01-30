@@ -2,25 +2,21 @@ import { Directive, Input, AfterViewInit, OnDestroy, ContentChildren, QueryList 
 import * as THREE from 'three';
 import { PerspectiveCameraDir } from '../camera';
 import { RendererCom } from '../renderer.com';
-import 'three/examples/js/controls/OrbitControls';
+import 'three/examples/js/controls/TrackballControls';
 
 @Directive
 ({
-  selector: 'three-orbit-controls'
+  selector: 'three-trackball-control'
 })
-export class OrbitControlsDir implements AfterViewInit, OnDestroy
+export class TrackballControlsDir implements AfterViewInit, OnDestroy
 {
-
   @ContentChildren(PerspectiveCameraDir, { descendants: true }) childCameras: QueryList<PerspectiveCameraDir>;
   @ContentChildren(RendererCom, { descendants: true }) childRenderers: QueryList<RendererCom>;
 
-  @Input() rotateSpeed = 1.0;
-  @Input() zoomSpeed = 1.2;
-
-  controls: THREE.OrbitControls;
+  controls: THREE.TrackballControls;
 
   constructor() {
-    console.log('OrbitControlsDir.constructor');
+    console.log('TrackballControlsDir.constructor');
   }
 
   ngAfterViewInit(): void
@@ -33,9 +29,7 @@ export class OrbitControlsDir implements AfterViewInit, OnDestroy
       throw new Error('Renderer is not found');
     }
 
-    this.controls = new THREE.OrbitControls(this.childCameras.first.camera);
-    this.controls.rotateSpeed = this.rotateSpeed;
-    this.controls.zoomSpeed = this.zoomSpeed;
+    this.controls = new THREE.TrackballControls(this.childCameras.first.camera);
     this.controls.addEventListener('change', this.childRenderers.first.render);
     this.childRenderers.first.render();
   }
