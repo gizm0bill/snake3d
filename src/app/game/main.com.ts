@@ -46,8 +46,8 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
 
   @HostListener(`${dkd}w`)
-  @HostListener(`${dkd}arrowUp`) 
-  private arrowUp() { this.direction$.next( dirs.up ); }
+  @HostListener(`${dkd}arrowUp`)
+  private arrowUp() { this.direction$.next( dirs.up ); this.headCube.object.up.copy( new Vector3(1, 0, 0) ); }
 
   @HostListener(`${dkd}s`)
   @HostListener(`${dkd}arrowDown`)
@@ -95,7 +95,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   {
     this.headCube = this.cubes.first;
     this.cdr.detectChanges();
-
+    
     this.headCube.object.add( this.camera.camera );
 
     const snake$ = this.direction$.pipe
@@ -119,6 +119,5 @@ export class MainCom implements OnDestroy, AfterViewInit
         this.zone.runOutsideAngular( () => this.childRenderer.render() );
       })
     ).subscribe();
-
   }
 }

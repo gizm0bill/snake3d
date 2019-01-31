@@ -49,7 +49,7 @@ export class ThirdPersonControlDir implements OnChanges
 
   // Set to false to disable rotating
   enableRotate = true;
-  rotateSpeed = .25;
+  rotateSpeed = 1;
 
   private scale = 1;
   private spherical = new Spherical;
@@ -62,6 +62,11 @@ export class ThirdPersonControlDir implements OnChanges
   update()
   {
     if ( !this.cameraObj || !this.playerObj ) return false;
+
+    this.cameraObj.up.copy( this.playerObj.up );
+    this.quat = (new Quaternion).setFromUnitVectors( this.cameraObj.up, new Vector3( 0, 1, 0 ) );
+    this.quatInverse = this.quat.clone().inverse();
+
     this.offset.copy( this.cameraObj.position );
     // rotate offset to "y-axis-is-up" space
     this.offset.applyQuaternion( this.quat );
@@ -73,7 +78,6 @@ export class ThirdPersonControlDir implements OnChanges
     //   rotateLeft( getAutoRotationAngle() );
 
     // }
-
     this.spherical.theta += this.sphericalDelta.theta;
     this.spherical.phi += this.sphericalDelta.phi;
     // restrict theta to be between desired limits
@@ -84,12 +88,14 @@ export class ThirdPersonControlDir implements OnChanges
     this.spherical.radius *= this.scale;
     // restrict radius to be between desired limits
     this.spherical.radius = Math.max( this.minDistance, Math.min( this.maxDistance, this.spherical.radius ) );
+
     this.offset.setFromSpherical( this.spherical );
 
     // rotate offset back to "camera-up-vector-is-up" space
     this.offset.applyQuaternion( this.quatInverse );
 
     this.cameraObj.position.copy( this.offset );
+
     this.cameraObj.lookAt( this.playerObj.position );
 
     if ( this.enableDamping === true ) {
