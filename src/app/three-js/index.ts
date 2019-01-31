@@ -3,7 +3,7 @@ import './enable.js';
 import { RendererCom } from './renderer.com';
 import { SceneDir } from './scene.dir';
 import { PerspectiveCameraDir } from './camera';
-import { OrbitControlsDir, ThirdPersonControlDir, TrackballControlsDir } from './control';
+import { OrbitControlsDir, ThirdPersonControlDir } from './control';
 import { LightMod } from './light';
 import { BoxBufferGeometryDir } from './geometry';
 import { MaterialMod } from './material';
@@ -19,7 +19,6 @@ import { HelperMod } from './helper';
     PerspectiveCameraDir,
     ThirdPersonControlDir,
     OrbitControlsDir,
-    TrackballControlsDir,
     BoxBufferGeometryDir,
   ],
   exports:
@@ -29,7 +28,6 @@ import { HelperMod } from './helper';
     PerspectiveCameraDir,
     ThirdPersonControlDir,
     OrbitControlsDir,
-    TrackballControlsDir,
     BoxBufferGeometryDir,
 
     LightMod,

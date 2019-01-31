@@ -4,13 +4,13 @@ import
 } from '@angular/core';
 import { RendererCom } from '../three-js';
 import { Vector3 } from 'three';
-import { interval, animationFrameScheduler, Subject, timer, forkJoin } from 'rxjs';
-import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap } from 'rxjs/operators';
+import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range } from 'rxjs';
+import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
-import { ThirdPersonControlDir, TrackballControlsDir, OrbitControlsDir } from '../three-js/control';
+import { ThirdPersonControlDir } from '../three-js/control';
 import { PerspectiveCameraDir } from '../three-js/camera';
 
-const ls = 'document:keydown.';
+const dkd = 'document:keydown.';
 const dirs =
 {
   up: [ new Vector3(1, 0, 0), -Math.PI / 2 ],
@@ -28,7 +28,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 {
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
-  @ViewChild(OrbitControlsDir) control: OrbitControlsDir;
+  @ViewChild(ThirdPersonControlDir) control: ThirdPersonControlDir;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
 
   cubeSize = 2;
@@ -45,10 +45,21 @@ export class MainCom implements OnDestroy, AfterViewInit
       .map( ( _, index ) => start.clone().sub( new Vector3( 0, 0, this.cubeSize * index ) ) );
   }
 
-  @HostListener(`${ls}arrowUp`) private arrowUp() { this.direction$.next( dirs.up ); }
-  @HostListener(`${ls}arrowDown`) private arrowDown() { this.direction$.next( dirs.down ); }
-  @HostListener(`${ls}arrowLeft`) private arrowLeft() { this.direction$.next( dirs.left ); }
-  @HostListener(`${ls}arrowRight`) private arrowRight() { this.direction$.next( dirs.right ); }
+  @HostListener(`${dkd}w`)
+  @HostListener(`${dkd}arrowUp`) 
+  private arrowUp() { this.direction$.next( dirs.up ); }
+
+  @HostListener(`${dkd}s`)
+  @HostListener(`${dkd}arrowDown`)
+  private arrowDown() { this.direction$.next( dirs.down ); }
+
+  @HostListener(`${dkd}a`)
+  @HostListener(`${dkd}arrowLeft`)
+  private arrowLeft() { this.direction$.next( dirs.left ); }
+
+  @HostListener(`${dkd}d`)
+  @HostListener(`${dkd}arrowRight`)
+  private arrowRight() { this.direction$.next( dirs.right ); }
 
   private direction$ = new Subject;
   private loop$ = interval( 10, animationFrameScheduler )
@@ -58,13 +69,23 @@ export class MainCom implements OnDestroy, AfterViewInit
     scan( (previous, current) => ({ time: current.time, deltaTime: (current.time - previous.time) / 1000 }) )
   );
 
-  private seconds$ = interval( 1000 );
+  private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat() );
 
-  private renderer: any;
   @HostListener( 'window:resize', ['$event'] )
   onWindowResize( event: any ) {
-    this.renderer.onResize( event );
+    this.childRenderer.onResize( event );
   }
+
+  @HostListener( 'document:mousedown', ['$event'] )
+  mouseDown( event: MouseEvent )
+  {
+    this.control.rotateStartEvent = event;
+    this.control.mouseLocked = true;
+  }
+  @HostListener( 'document:mouseout' )
+  @HostListener( 'document:keydown.esc' )
+  mouseUp() { this.control.mouseLocked = false; }
+
   ngOnDestroy()
   {
   }
@@ -81,7 +102,6 @@ export class MainCom implements OnDestroy, AfterViewInit
     (
       filter( dir => undefined !== dir ),
       sampleTime( 1000 ),
-      // distinctUntilChanged(),
       mergeMap( dir => forkJoin
       (
         this.cubes.map( (cube, index) => timer( index * 1000 ).pipe( tap( _ => cube.object.rotateOnAxis.apply( cube.object, dir ) ) ) )
@@ -89,30 +109,16 @@ export class MainCom implements OnDestroy, AfterViewInit
       startWith( undefined ),
     );
 
-
     this.loop$.pipe
     (
       withLatestFrom( snake$ ),
-      // merge( x ),
       tap( ([{ deltaTime }, _]) =>
       {
-        this.cubes.forEach( cube => cube.object.translateZ( deltaTime * this.cubeSize / 1 ) );
-        // const camera =  ( this.renderer.cameraComponents.first.camera as PerspectiveCamera );
-        // camera.position.copy( this.cubes.first.object.position.clone().sub( new Vector3(0, -5, 5) ) );
-        // camera.lookAt( this.cubes.first.object.position );
-        this.control.controls.target.copy( this.headCube.object.position.clone() );
-        this.control.controls.update();
-        this.zone.runOutsideAngular( () => this.renderer.render() );
+        this.cubes.forEach( cube => cube.object.translateZ( deltaTime * this.cubeSize ) );
+        this.control.update();
+        this.zone.runOutsideAngular( () => this.childRenderer.render() );
       })
     ).subscribe();
 
-
-    this.renderer = this.childRenderer;
-    // setTimeout( this.renderer.onResize.bind(renderer), 500 ); // TODO: animation end from unloaded component
-    // this.zone.runOutsideAngular( () =>
-    //   this.refreshInterval = setInterval( () =>
-    //   {
-    //     this.renderer.render();
-    //   }, 29) );
   }
 }

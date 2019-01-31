@@ -1,9 +1,7 @@
-import { Directive, Input, OnChanges, SimpleChanges, HostListener } from '@angular/core';
+import { Directive, Input, OnChanges, HostListener } from '@angular/core';
 import { ACamera } from '../camera';
 import { AObject3D } from '../object-3d';
-import { Object3D, Camera, Vector3, Vector2 } from 'three';
-
-enum STATE { NONE, ROTATE, ZOOM, PAN };
+import { Object3D, Camera, Vector3, Vector2, Quaternion, Spherical } from 'three';
 
 @Directive
 ({
@@ -13,210 +11,145 @@ export class ThirdPersonControlDir implements OnChanges
 {
   @Input() camera: ACamera<any>;
   @Input() player: AObject3D<any>;
-
   private playerObj: Object3D;
   private cameraObj: Camera;
-
-  ngOnChanges( changes: SimpleChanges )
+  ngOnChanges()
   {
-    if ( this.camera && this.camera.camera && this.player && this.player.object )
+    if ( this.camera && this.camera.camera )
     {
       this.cameraObj = this.camera.camera;
-      this.playerObj = this.player.object;
+      this.quat = (new Quaternion).setFromUnitVectors( this.cameraObj.up, new Vector3( 0, 1, 0 ) );
+      this.quatInverse = this.quat.clone().inverse();
     }
+    if ( this.player && this.player.object ) this.playerObj = this.player.object;
   }
 
-  autoRotateSpeed = 0.1;
-  autoRotate = false;
   minDistance = 0;
   maxDistance = Infinity;
-  minPolarAngle = 0;
-  maxPolarAngle = Math.PI;
-  moveSpeed = 0.2;
-  turnSpeed = 0.1;
 
-  userZoom = true;
-  userZoomSpeed = 1.0;
+  // How far you can orbit vertically, upper and lower limits.
+  // Range is 0 to Math.PI radians.
+  minPolarAngle = - Infinity; // radians
+  maxPolarAngle = Math.PI; // radians
 
-  userRotate = true;
-  userRotateSpeed = 1.5;
+  // How far you can orbit horizontally, upper and lower limits.
+  // If set, must be a sub-interval of the interval [ - Math.PI, Math.PI ].
+  minAzimuthAngle = - Infinity; // radians
+  maxAzimuthAngle = Infinity; // radians
 
-  YAutoRotation = false;
+  // Set to true to enable damping (inertia)
+  // If damping is enabled, you must call controls.update() in your animation loop
+  enableDamping = true;
+  dampingFactor = 1.25;
 
-  private phiDelta = 0;
-  private thetaDelta = 0;
+  // This option actually enables dollying in and out; left as "zoom" for backwards compatibility.
+  // Set to false to disable zooming
+  enableZoom = true;
+  zoomSpeed = 1;
+
+  // Set to false to disable rotating
+  enableRotate = true;
+  rotateSpeed = .25;
+
   private scale = 1;
-  private EPS = 0.000001;
-  private PIXELS_PER_ROUND = 1800;
-  private lastPosition;
-
-  getAutoRotationAngle()
-  {
-    return 2 * Math.PI / 60 / 60 * this.autoRotateSpeed;
-  }
-  getZoomScale()
-  {
-    return Math.pow( 0.95, this.userZoomSpeed );
-  }
-  rotateLeft( angle )
-  {
-    if ( angle === undefined )
-      angle = this.getAutoRotationAngle();
-    this.thetaDelta -= angle;
-  }
-  rotateRight( angle )
-  {
-    if ( angle === undefined )
-      angle = this.getAutoRotationAngle();
-    this.thetaDelta += angle;
-  }
-  rotateUp( angle )
-  {
-    if ( angle === undefined )
-      angle = this.getAutoRotationAngle();
-    this.phiDelta -= angle;
-
-  }
-  rotateDown( angle )
-  {
-    if ( angle === undefined )
-      angle = this.getAutoRotationAngle();
-    this.phiDelta += angle;
-
-  }
-  zoomIn ( zoomScale )
-  {
-    if ( zoomScale === undefined )
-      zoomScale = this.getZoomScale();
-    this.scale /= zoomScale;
-  }
-  zoomOut ( zoomScale )
-  {
-    if ( zoomScale === undefined )
-      zoomScale = this.getZoomScale();
-    this.scale *= zoomScale;
-  }
-
+  private spherical = new Spherical;
+  private sphericalDelta = new Spherical;
+  private quat: Quaternion;
+  private quatInverse: Quaternion;
+  private offset = new Vector3;
+  private lastPosition = new Vector3;
+  private lastQuaternion = new Quaternion;
   update()
   {
-    if ( !this.lastPosition )
-      this.lastPosition = new Vector3( this.playerObj.position.x, this.playerObj.position.y, this.playerObj.position.z );
-    // this.center = this.player.position;
-    // this.cameraObj.position.copy( this.playerObj.position.clone().add( new Vector3( 0, 2, -10 ) ) );
-
-    const position = this.cameraObj.position;
-    const offset = position.clone().sub( this.playerObj.position );
-
+    if ( !this.cameraObj || !this.playerObj ) return false;
+    this.offset.copy( this.cameraObj.position );
+    // rotate offset to "y-axis-is-up" space
+    this.offset.applyQuaternion( this.quat );
     // angle from z-axis around y-axis
-    let theta = Math.atan2( offset.x, offset.z );
+    this.spherical.setFromVector3( this.offset );
 
-    // angle from y-axis
-    let phi = Math.atan2( Math.sqrt( offset.x * offset.x + offset.z * offset.z ), offset.y );
+    // if ( scope.autoRotate && state === STATE.NONE ) {
 
-    theta += this.thetaDelta;
-    phi += this.phiDelta;
+    //   rotateLeft( getAutoRotationAngle() );
 
+    // }
+
+    this.spherical.theta += this.sphericalDelta.theta;
+    this.spherical.phi += this.sphericalDelta.phi;
+    // restrict theta to be between desired limits
+    this.spherical.theta = Math.max( this.minAzimuthAngle, Math.min( this.maxAzimuthAngle, this.spherical.theta ) );
     // restrict phi to be between desired limits
-    phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, phi ) );
+    this.spherical.phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, this.spherical.phi ) );
+    this.spherical.makeSafe();
+    this.spherical.radius *= this.scale;
+    // restrict radius to be between desired limits
+    this.spherical.radius = Math.max( this.minDistance, Math.min( this.maxDistance, this.spherical.radius ) );
+    this.offset.setFromSpherical( this.spherical );
 
-    // restrict phi to be between EPS and PI-EPS
-    phi = Math.max( this.EPS, Math.min( Math.PI - this.EPS, phi ) );
+    // rotate offset back to "camera-up-vector-is-up" space
+    this.offset.applyQuaternion( this.quatInverse );
 
-    let radius = offset.length() * this.scale;
-
-    radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
-
-    offset.x = radius * Math.sin( phi ) * Math.sin( theta );
-    offset.y = radius * Math.cos( phi );
-    offset.z = radius * Math.sin( phi ) * Math.cos( theta );
-
-    if ( this.autoRotate ) {
-
-      this.cameraObj.position.x += this.autoRotateSpeed *
-        ( ( this.playerObj.position.x + 8 * Math.sin( this.playerObj.rotation.y ) ) - this.cameraObj.position.x );
-      this.cameraObj.position.z += this.autoRotateSpeed *
-        ( ( this.playerObj.position.z + 8 * Math.cos( this.playerObj.rotation.y ) ) - this.cameraObj.position.z );
-    } else {
-      this.cameraObj.position.copy( this.playerObj.position.clone().add( offset ) );
-
-    }
-
+    this.cameraObj.position.copy( this.offset );
     this.cameraObj.lookAt( this.playerObj.position );
 
-    this.thetaDelta = 0;
-    this.phiDelta = 0;
+    if ( this.enableDamping === true ) {
+
+      this.sphericalDelta.theta *= ( 1 - this.dampingFactor );
+      this.sphericalDelta.phi *= ( 1 - this.dampingFactor );
+    } else this.sphericalDelta.set( 0, 0, 0 );
     this.scale = 1;
-
-
-
-    // if ( state === STATE.NONE && playerIsMoving ) {
-
-    //   this.autoRotate = true;
-
-    // } else {
-
-    //   this.autoRotate = false;
-
-    // }
-
-    // if ( lastPosition.distanceTo( this.playerObj.position) > 0 ) {
-
-
-      // lastPosition.copy( this.playerObj.position );
-
-    // } else if ( lastPosition.distanceTo( this.playerObj.position) === 0 ) {
-
-    //   playerIsMoving = false;
-
-    // }
+    // update condition is:
+    // min(camera displacement, camera rotation in radians)^2 > EPS
+    // using small-angle approximation cos(x/2) = 1 - x^2 / 8
+    if ( this.lastPosition.distanceToSquared( this.cameraObj.position ) > .000001 ||
+      8 * ( 1 - this.lastQuaternion.dot( this.cameraObj.quaternion ) ) > .000001 )
+    {
+      this.lastPosition.copy( this.cameraObj.position );
+      this.lastQuaternion.copy( this.cameraObj.quaternion );
+    }
   }
+
+  rotateStartEvent: MouseEvent;
+  private _mouseLocked = false;
+  set mouseLocked( value: boolean )
+  {
+    if ( !!value )
+    {
+      this.rotateStart.set( this.rotateStartEvent.clientX, this.rotateStartEvent.clientY );
+      this.rotateStartEvent = undefined;
+    }
+    this._mouseLocked = value;
+  }
+  get mouseLocked() { return this._mouseLocked; }
 
   private rotateStart = new Vector2();
   private rotateEnd = new Vector2();
   private rotateDelta = new Vector2();
-  private state: STATE;
 
-  @HostListener('document:mousedown', ['$event.button', '$event.clientX', '$event.clientY' ])
-  mouseDown( button: number, x: number, y: number )
+  private get zoomScale() { return Math.pow( 0.95, this.zoomSpeed ); }
+  private rotateLeft( angle: number ) { this.sphericalDelta.theta -= angle; }
+  private rotateUp( angle: number ) { this.sphericalDelta.phi -= angle; }
+  private dollyIn( dollyScale: number ) { this.scale /= dollyScale; }
+  private dollyOut( dollyScale: number ) { this.scale *= dollyScale; }
+
+  @HostListener('document:mousemove', ['$event.clientX', '$event.clientY', '$event.target.clientHeight'])
+  mouseMove( x: number, y: number, elementHeight: number )
   {
-    if ( button === 0 ) {
-
-      this.state = STATE.ROTATE;
-      this.rotateStart.set( x, y );
-    } else if ( button === 1 ) {
-
-      this.state = STATE.ZOOM;
-      // this.zoomStart.set( x, y );
-    }
+    if ( !this.mouseLocked ) return;
+    this.rotateEnd.set( x, y );
+    this.rotateDelta.subVectors( this.rotateEnd, this.rotateStart ).multiplyScalar( this.rotateSpeed );
+    this.rotateLeft( 2 * Math.PI * this.rotateDelta.x / elementHeight ); // yes, height
+    this.rotateUp( 2 * Math.PI * this.rotateDelta.y / elementHeight );
+    this.rotateStart.copy( this.rotateEnd );
+    this.update();
   }
 
-  @HostListener('document:mousemove', ['$event.clientX', '$event.clientY'])
-  mouseMove( x: number, y: number )
+  @HostListener('document:mousewheel', ['$event.deltaX', '$event.deltaY'])
+  mouseWheel( x: number, y: number )
   {
-    // if ( scope.enabled === false ) return;
-
-
-    if ( this.state === STATE.ROTATE ) {
-
-      this.rotateEnd.set( x, y );
-      this.rotateDelta.subVectors( this.rotateEnd, this.rotateStart );
-
-      this.rotateLeft( 2 * Math.PI * this.rotateDelta.x / this.PIXELS_PER_ROUND * this.userRotateSpeed );
-      this.rotateUp( 2 * Math.PI * this.rotateDelta.y / this.PIXELS_PER_ROUND * this.userRotateSpeed );
-
-      this.rotateStart.copy( this.rotateEnd );
-
-    }
-    // else if ( this.state === STATE.ZOOM )
-    // {
-    //   zoomEnd.set( x, y );
-    //   zoomDelta.subVectors( zoomEnd, zoomStart );
-    //   if ( zoomDelta.y > 0 ) {
-    //     scope.zoomIn();
-    //   } else {
-    //     scope.zoomOut();
-    //   }
-    //   zoomStart.copy( zoomEnd );
-    // }
+    if ( y < 0 ) this.dollyOut( this.zoomScale );
+    else if ( y > 0 ) this.dollyIn( this.zoomScale );
+    this.update();
   }
+
 }

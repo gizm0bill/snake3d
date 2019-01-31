@@ -1,31 +1,29 @@
 .timer {{seconds$|async}}
 
-//- three-3rd-person-control( [camera]="gameCamera", [player]="headCube", #control )
+three-3rd-person-control( [camera]="gameCamera", [player]="headCube", #control )
 
-three-orbit-controls(  )
+three-renderer( #mainRenderer )
 
-  three-renderer( #mainRenderer )
-
-    three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=6 positionY=6, positionZ=12, #gameCamera="threePerspectiveCamera" )
+  three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=0 positionY=5, positionZ=-5, #gameCamera="threePerspectiveCamera" )
+  
+  three-scene
     
-    three-scene
-      
-      three-axes-helper( size=64 )
-      three-grid-helper( size=128, divisions=128 )
+    three-axes-helper( size=64 )
+    three-grid-helper( size=128, divisions=128 )
 
-      three-ambient-light( color='#000000' )
+    three-ambient-light( color='#000000' )
 
-      three-point-light( color='#FFFFFF', position=' 0, 50, 20 ' )
-      three-point-light( color='#FFFFFF', position=' 70, 30, 50 ' )
-      three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
+    three-point-light( color='#FFFFFF', position=' 0, 50, 20 ' )
+    three-point-light( color='#FFFFFF', position=' 70, 30, 50 ' )
+    three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
 
-      //- three-mesh
-        three-box-buffer-geometry( widthSegments=32, heightSegments=32 )
-        game-box-material
+    //- three-mesh
+      three-box-buffer-geometry( widthSegments=32, heightSegments=32 )
+      game-box-material
 
-      three-group
-        three-mesh( *ngFor=" let segment of snakeSegments ", [position]="segment" )
-          three-box-buffer-geometry( [width]='cubeSize * .75', [height]='cubeSize * .75', [depth]='cubeSize * .75' )
-          three-mesh-lambert-material
+    three-group
+      three-mesh( *ngFor=" let segment of snakeSegments ", [position]="segment" )
+        three-box-buffer-geometry( [width]='cubeSize * .75', [height]='cubeSize * .75', [depth]='cubeSize * .75' )
+        three-mesh-lambert-material
 
       
