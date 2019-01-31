@@ -4,7 +4,7 @@ import
 } from '@angular/core';
 import { RendererCom } from '../three-js';
 import { Vector3 } from 'three';
-import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range } from 'rxjs';
+import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of } from 'rxjs';
 import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
 import { ThirdPersonControlDir } from '../three-js/control';
@@ -13,10 +13,10 @@ import { PerspectiveCameraDir } from '../three-js/camera';
 const dkd = 'document:keydown.';
 const dirs =
 {
-  up: [ new Vector3(1, 0, 0), -Math.PI / 2 ],
-  down: [ new Vector3(1, 0, 0), Math.PI / 2 ],
-  left: [ new Vector3(0, 1, 0), -Math.PI / 2 ],
-  right: [ new Vector3(0, 1, 0), Math.PI / 2 ],
+  up: [ new Vector3(1, 0, 0), -Math.PI / 2, true ],
+  down: [ new Vector3(1, 0, 0), Math.PI / 2, true ],
+  left: [ new Vector3(0, 1, 0), Math.PI / 2 ],
+  right: [ new Vector3(0, 1, 0), -Math.PI / 2 ],
 };
 @Component
 ({
@@ -47,7 +47,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)
-  private arrowUp() { this.direction$.next( dirs.up ); this.headCube.object.up.copy( new Vector3(1, 0, 0) ); }
+  private arrowUp() { this.direction$.next( dirs.up ); }
 
   @HostListener(`${dkd}s`)
   @HostListener(`${dkd}arrowDown`)
@@ -95,17 +95,25 @@ export class MainCom implements OnDestroy, AfterViewInit
   {
     this.headCube = this.cubes.first;
     this.cdr.detectChanges();
-    
+
     this.headCube.object.add( this.camera.camera );
 
     const snake$ = this.direction$.pipe
     (
       filter( dir => undefined !== dir ),
       sampleTime( 1000 ),
-      mergeMap( dir => forkJoin
-      (
-        this.cubes.map( (cube, index) => timer( index * 1000 ).pipe( tap( _ => cube.object.rotateOnAxis.apply( cube.object, dir ) ) ) )
-      ) ),
+      mergeMap( ( dir: any[] ) =>
+      {
+        const [ v, a, changeUp ] = dir;
+        let start = of(undefined);
+        if ( changeUp ) start = start.pipe( tap( _ =>  this.headCube.object.up.applyAxisAngle( v as Vector3, a ) ) );
+        // TODO: 1 obs;
+        return forkJoin
+        (
+          start,
+          ...this.cubes.map( (cube, index) => timer( index * 1000 ).pipe( tap( _ => cube.object.rotateOnAxis.apply( cube.object, dir ) ) ) )
+        );
+      } ),
       startWith( undefined ),
     );
 

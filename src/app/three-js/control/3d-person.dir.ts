@@ -1,7 +1,7 @@
 import { Directive, Input, OnChanges, HostListener } from '@angular/core';
 import { ACamera } from '../camera';
 import { AObject3D } from '../object-3d';
-import { Object3D, Camera, Vector3, Vector2, Quaternion, Spherical } from 'three';
+import { Object3D, Camera, Vector3, Vector2, Quaternion, Spherical, PerspectiveCamera } from 'three';
 
 @Directive
 ({
@@ -20,9 +20,16 @@ export class ThirdPersonControlDir implements OnChanges
       this.cameraObj = this.camera.camera;
       this.quat = (new Quaternion).setFromUnitVectors( this.cameraObj.up, new Vector3( 0, 1, 0 ) );
       this.quatInverse = this.quat.clone().inverse();
+      this.position0 = this.cameraObj.position.clone();
     }
-    if ( this.player && this.player.object ) this.playerObj = this.player.object;
+    if ( this.player && this.player.object )
+    {
+      this.playerObj = this.player.object;
+      this.lastPlayerUp = this.playerObj.up.clone();
+    }
   }
+
+  position0: Vector3;
 
   minDistance = 0;
   maxDistance = Infinity;
@@ -59,25 +66,28 @@ export class ThirdPersonControlDir implements OnChanges
   private offset = new Vector3;
   private lastPosition = new Vector3;
   private lastQuaternion = new Quaternion;
+  private lastPlayerUp: Vector3;
   update()
   {
     if ( !this.cameraObj || !this.playerObj ) return false;
-
-    this.cameraObj.up.copy( this.playerObj.up );
-    this.quat = (new Quaternion).setFromUnitVectors( this.cameraObj.up, new Vector3( 0, 1, 0 ) );
-    this.quatInverse = this.quat.clone().inverse();
-
+    let resetSphericalRadius = 0;
+    if ( !this.lastPlayerUp.equals( this.playerObj.up ) )
+    {
+      resetSphericalRadius = this.spherical.radius;
+      this.cameraObj.position.copy( this.position0 );
+      (this.cameraObj as PerspectiveCamera).updateProjectionMatrix();
+      this.quat = (new Quaternion).setFromUnitVectors( this.cameraObj.up, new Vector3( 0, 1, 0 ) );
+      this.quatInverse = this.quat.clone().inverse();
+      this.cameraObj.up.copy( this.playerObj.up );
+      this.lastPlayerUp = this.playerObj.up.clone();
+    }
     this.offset.copy( this.cameraObj.position );
     // rotate offset to "y-axis-is-up" space
     this.offset.applyQuaternion( this.quat );
     // angle from z-axis around y-axis
     this.spherical.setFromVector3( this.offset );
+    if ( !!resetSphericalRadius ) this.spherical.radius = resetSphericalRadius;
 
-    // if ( scope.autoRotate && state === STATE.NONE ) {
-
-    //   rotateLeft( getAutoRotationAngle() );
-
-    // }
     this.spherical.theta += this.sphericalDelta.theta;
     this.spherical.phi += this.sphericalDelta.phi;
     // restrict theta to be between desired limits
@@ -88,14 +98,12 @@ export class ThirdPersonControlDir implements OnChanges
     this.spherical.radius *= this.scale;
     // restrict radius to be between desired limits
     this.spherical.radius = Math.max( this.minDistance, Math.min( this.maxDistance, this.spherical.radius ) );
-
     this.offset.setFromSpherical( this.spherical );
 
     // rotate offset back to "camera-up-vector-is-up" space
     this.offset.applyQuaternion( this.quatInverse );
 
     this.cameraObj.position.copy( this.offset );
-
     this.cameraObj.lookAt( this.playerObj.position );
 
     if ( this.enableDamping === true ) {

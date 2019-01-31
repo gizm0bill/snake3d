@@ -22,8 +22,8 @@ three-renderer( #mainRenderer )
       game-box-material
 
     three-group
-      three-mesh( *ngFor=" let segment of snakeSegments ", [position]="segment" )
+      three-mesh( *ngFor=" let segment of snakeSegments; first as f ", [position]="segment" )
         three-box-buffer-geometry( [width]='cubeSize * .75', [height]='cubeSize * .75', [depth]='cubeSize * .75' )
-        three-mesh-lambert-material
+        three-mesh-lambert-material( [color]=" f ? '#FF0000' : '#0000FF' " )
 
       
