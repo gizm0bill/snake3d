@@ -41,6 +41,7 @@ export class RendererCom implements AfterViewInit
     this.onResize(new Event('_dummy_'));
   }
 
+  get domElement() { return this.renderer.domElement; }
   render()
   {
     const sceneComponent = this.sceneComponents.first;

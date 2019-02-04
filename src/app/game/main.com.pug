@@ -1,7 +1,5 @@
 .timer {{seconds$|async}}
 
-three-3rd-person-control( [camera]="gameCamera", [player]="headCube", #control )
-
 three-renderer( #mainRenderer )
 
   three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=0 positionY=5, positionZ=-5, #gameCamera="threePerspectiveCamera" )

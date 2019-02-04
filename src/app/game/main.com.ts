@@ -3,13 +3,15 @@ import
   Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ViewChildren, QueryList, ChangeDetectorRef
 } from '@angular/core';
 import { RendererCom } from '../three-js';
-import { Vector3 } from 'three';
+import { Vector3, Spherical, LineBasicMaterial, Geometry, Line, Matrix4 } from 'three';
 import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of } from 'rxjs';
 import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
 import { ThirdPersonControlDir } from '../three-js/control';
 import { PerspectiveCameraDir } from '../three-js/camera';
 
+const vZero = new Vector3(0, 0, 0);
+const vX = new Vector3(1, 0, 0);
 const dkd = 'document:keydown.';
 const dirs =
 {
@@ -76,15 +78,28 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.childRenderer.onResize( event );
   }
 
-  @HostListener( 'document:mousedown', ['$event'] )
-  mouseDown( event: MouseEvent )
+  private spherical = new Spherical(5);
+  @HostListener( 'document:mousemove', ['$event.clientX', '$event.clientY'] )
+  mouseMove( clientX: number, clientY: number )
   {
-    this.control.rotateStartEvent = event;
-    this.control.mouseLocked = true;
+    const clientHeight = document.documentElement.clientHeight;
+    Object.assign( this.spherical,
+    {
+     phi: ( clientY / clientHeight ) * Math.PI * 2,
+     theta: -( clientX / clientHeight ) * Math.PI * 2
+    } );
+    this.camera.camera.position.setFromSpherical( this.spherical );
+    this.camera.camera.lookAt( this.headCube.object.position );
   }
-  @HostListener( 'document:mouseout' )
-  @HostListener( 'document:keydown.esc' )
-  mouseUp() { this.control.mouseLocked = false; }
+
+  @HostListener( 'document:wheel', ['$event.deltaY'] )
+  mouseWheel( deltaY: number )
+  {
+    const radius = Math.max( 2.5, Math.min( 10, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
+    this.spherical.radius = radius;
+    console.log( '...', this.spherical.radius );
+    this.camera.camera.position.setFromSpherical( this.spherical );
+  }
 
   ngOnDestroy()
   {
@@ -94,19 +109,25 @@ export class MainCom implements OnDestroy, AfterViewInit
   ngAfterViewInit()
   {
     this.headCube = this.cubes.first;
+    const m = new LineBasicMaterial({ color: 0x0000ff });
+    const g = new Geometry;
+    console.log( this.headCube.object.up.clone().multiplyScalar(10) );
+    g.vertices.push( vZero );
+    g.vertices.push( this.headCube.object.up.clone().multiplyScalar(10) );
+    const l = new Line(g, m);
     this.cdr.detectChanges();
-
+    this.headCube.object.add( l );
     this.headCube.object.add( this.camera.camera );
-
     const snake$ = this.direction$.pipe
     (
       filter( dir => undefined !== dir ),
       sampleTime( 1000 ),
       mergeMap( ( dir: any[] ) =>
       {
-        const [ v, a, changeUp ] = dir;
+        const [ , a, changeUp ] = dir;
         let start = of(undefined);
-        if ( changeUp ) start = start.pipe( tap( _ =>  this.headCube.object.up.applyAxisAngle( v as Vector3, a ) ) );
+        if ( changeUp )
+          start = start.pipe( tap( _ => this.camera.camera.up.applyMatrix4( (new Matrix4).makeRotationAxis( vX, a ) ).normalize() ) );
         // TODO: 1 obs;
         return forkJoin
         (
@@ -117,13 +138,25 @@ export class MainCom implements OnDestroy, AfterViewInit
       startWith( undefined ),
     );
 
+    const comps = [0, 1, 2];
     this.loop$.pipe
     (
       withLatestFrom( snake$ ),
       tap( ([{ deltaTime }, _]) =>
       {
-        this.cubes.forEach( cube => cube.object.translateZ( deltaTime * this.cubeSize ) );
-        this.control.update();
+        this.cubes.forEach( cube =>
+        {
+          const cubeObj = cube.object;
+          cubeObj.translateZ( deltaTime * this.cubeSize );
+          // 'normalize' other axes
+          comps.forEach( compIdx =>
+          {
+            const comp = cubeObj.position.getComponent( compIdx );
+            if ( cubeObj.userData.lastPosition && comp === cubeObj.userData.lastPosition.getComponent( compIdx ) )
+              cubeObj.position.setComponent( compIdx, Math.round(comp) );
+          } );
+          cubeObj.userData.lastPosition = cube.object.position.clone();
+        } );
         this.zone.runOutsideAngular( () => this.childRenderer.render() );
       })
     ).subscribe();
