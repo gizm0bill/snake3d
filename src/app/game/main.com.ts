@@ -4,8 +4,8 @@ import
 } from '@angular/core';
 import { RendererCom } from '../three-js';
 import { Vector3, Spherical, LineBasicMaterial, Geometry, Line, Matrix4 } from 'three';
-import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of } from 'rxjs';
-import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat } from 'rxjs/operators';
+import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge } from 'rxjs';
+import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
 import { ThirdPersonControlDir } from '../three-js/control';
 import { PerspectiveCameraDir } from '../three-js/camera';
@@ -97,7 +97,6 @@ export class MainCom implements OnDestroy, AfterViewInit
   {
     const radius = Math.max( 2.5, Math.min( 10, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
     this.spherical.radius = radius;
-    console.log( '...', this.spherical.radius );
     this.camera.camera.position.setFromSpherical( this.spherical );
   }
 
@@ -122,17 +121,24 @@ export class MainCom implements OnDestroy, AfterViewInit
     (
       filter( dir => undefined !== dir ),
       sampleTime( 1000 ),
-      mergeMap( ( dir: any[] ) =>
+      mergeMap( ( [ axis, angle, changeUp ]: [ Vector3, number, boolean? ] ) =>
       {
-        const [ , a, changeUp ] = dir;
         let start = of(undefined);
         if ( changeUp )
-          start = start.pipe( tap( _ => this.camera.camera.up.applyMatrix4( (new Matrix4).makeRotationAxis( vX, a ) ).normalize() ) );
-        // TODO: 1 obs;
-        return forkJoin
+          start = start.pipe( tap( _ =>
+          {
+            this.camera.camera.up.applyMatrix4( (new Matrix4).makeRotationAxis( vX, angle ) ).normalize();
+            console.log( this.camera.camera.up );
+          } ) );
+        const cubesArray = this.cubes.toArray();
+        return merge
         (
           start,
-          ...this.cubes.map( (cube, index) => timer( index * 1000 ).pipe( tap( _ => cube.object.rotateOnAxis.apply( cube.object, dir ) ) ) )
+          timer( 0, 1000 ).pipe
+          (
+            take( this.cubes.length ),
+            tap( idx => cubesArray[idx].object.rotateOnAxis( axis, angle ) ),
+          )
         );
       } ),
       startWith( undefined ),
