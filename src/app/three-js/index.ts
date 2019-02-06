@@ -42,3 +42,5 @@ export class ThreeJsMod { }
 export * from './geometry';
 export * from './material';
 export * from './renderer.com';
+export * from './object';
+export * from './constants';

@@ -5,12 +5,14 @@ import { ThreeJsMod } from '../three-js';
 import { RoutingMod } from './routing.mod';
 import { BoxMaterialDir } from './box-material.dir';
 import { TestCom } from './test.com';
+import { SnakeCom } from './snake.com';
 
 @NgModule
 ({
   declarations:
   [
     MainCom,
+    SnakeCom,
     TestCom,
     BoxMaterialDir,
   ],

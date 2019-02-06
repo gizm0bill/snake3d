@@ -2,24 +2,23 @@ import
 {
   Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ViewChildren, QueryList, ChangeDetectorRef
 } from '@angular/core';
-import { RendererCom } from '../three-js';
-import { Vector3, Spherical, LineBasicMaterial, Geometry, Line, Matrix4 } from 'three';
+import { RendererCom, deg90, vY, vX, vZero } from '../three-js';
+import { Vector3, Spherical, LineBasicMaterial, Geometry, Line, Matrix4, CameraHelper } from 'three';
 import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge } from 'rxjs';
 import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
 import { ThirdPersonControlDir } from '../three-js/control';
 import { PerspectiveCameraDir } from '../three-js/camera';
 
-const vZero = new Vector3(0, 0, 0);
-const vX = new Vector3(1, 0, 0);
 const dkd = 'document:keydown.';
 const dirs =
 {
-  up: [ new Vector3(1, 0, 0), -Math.PI / 2, true ],
-  down: [ new Vector3(1, 0, 0), Math.PI / 2, true ],
-  left: [ new Vector3(0, 1, 0), Math.PI / 2 ],
-  right: [ new Vector3(0, 1, 0), -Math.PI / 2 ],
+  up: [ vX, -deg90 ],
+  down: [ vX, deg90 ],
+  left: [ vY, deg90 ],
+  right: [ vY, -deg90 ],
 };
+
 @Component
 ({
   selector: 'game',
@@ -114,31 +113,35 @@ export class MainCom implements OnDestroy, AfterViewInit
     g.vertices.push( vZero );
     g.vertices.push( this.headCube.object.up.clone().multiplyScalar(10) );
     const l = new Line(g, m);
-    this.cdr.detectChanges();
+    
     this.headCube.object.add( l );
     this.headCube.object.add( this.camera.camera );
+    const cameraHelper = new CameraHelper( this.camera.camera );
+    this.headCube.object.add( cameraHelper );
+
+    this.cdr.detectChanges();
+
+    const
+      camera = this.camera.camera,
+      headCubeObj = this.headCube.object;
+
     const snake$ = this.direction$.pipe
     (
       filter( dir => undefined !== dir ),
       sampleTime( 1000 ),
-      mergeMap( ( [ axis, angle, changeUp ]: [ Vector3, number, boolean? ] ) =>
+      mergeMap( ( [ axis, angle ]: [ Vector3, number ] ) =>
       {
-        let start = of(undefined);
-        if ( changeUp )
-          start = start.pipe( tap( _ =>
-          {
-            this.camera.camera.up.applyMatrix4( (new Matrix4).makeRotationAxis( vX, angle ) ).normalize();
-            console.log( this.camera.camera.up );
-          } ) );
-        const cubesArray = this.cubes.toArray();
+        const
+          rotateCamera = timer( 0 ).pipe( tap( _ => camera.up.copy( vY ).applyQuaternion( headCubeObj.quaternion ).normalize() ) ),
+          cubesArray = this.cubes.toArray();
         return merge
         (
-          start,
           timer( 0, 1000 ).pipe
           (
             take( this.cubes.length ),
             tap( idx => cubesArray[idx].object.rotateOnAxis( axis, angle ) ),
-          )
+          ),
+          rotateCamera,
         );
       } ),
       startWith( undefined ),

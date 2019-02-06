@@ -65,11 +65,18 @@ export class TestCom implements AfterViewInit
 
     this.cube = mesh;
 
-    group.rotateOnAxis( new Vector3( 0, 1, 0), Math.PI / 2 );
-
-    group.rotateOnAxis( new Vector3( 1, 0, 0), Math.PI / 2 );
-
-    console.log( camera.up.applyQuaternion( group.quaternion ).normalize() );
-    console.log( group.quaternion );
+    setTimeout( () =>
+    {
+      group.rotateOnAxis( new Vector3( 0, 1, 0), Math.PI / 2 );
+      camera.up.applyQuaternion( group.quaternion ).normalize();
+      this.childRenderer.render();
+    }, 5000 );
+    
+    setTimeout( () =>
+    {
+      group.rotateOnAxis( new Vector3( 1, 0, 0), Math.PI / 2 );
+      camera.up.applyQuaternion( group.quaternion ).normalize();
+      this.childRenderer.render();
+    }, 10000 );
   }
 }
