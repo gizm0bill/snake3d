@@ -1,5 +1,5 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input, forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
-import { Subject, timer, Observable, never, of, merge } from 'rxjs';
+import { Subject, timer, Observable, never, of, merge, BehaviorSubject } from 'rxjs';
 import { sampleTime, tap, startWith, filter, mergeMap, take } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
 import { MeshDir, deg90, vY, vX, vZero } from '../three-js';
@@ -60,27 +60,27 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       }
     });
 
-    this.snake$ = this.direction$.pipe
-    (
-      filter( dir => !!dir ),
-      sampleTime( this.speed ),
-      mergeMap( ( [ axis, angle ]: [ Vector3, number ] ) =>
-      {
-        const
-          camera = this.camera.camera,
-          headCube = this.cubes.first.object,
-          cubesArray = this.cubes.toArray().map( ( { object } ) => object ),
-          rotateCamera = this.camera
-            ? timer( 0 ).pipe( tap( _ => camera.up.copy( vY ).applyQuaternion( headCube.quaternion ).normalize() ) )
-            : of( undefined );
-        return merge
-        (
-          timer( 0, this.speed ).pipe( take( this.length ), tap( idx => cubesArray[idx].rotateOnAxis( axis, angle ) ) ),
-          rotateCamera
-        );
-      }),
-      startWith( undefined )
-    );
+    // this.snake$ = this.direction$.pipe
+    // (
+    //   filter( dir => !!dir ),
+    //   sampleTime( this.speed ),
+    //   mergeMap( ( [ axis, angle ]: [ Vector3, number ] ) =>
+    //   {
+    //     const
+    //       camera = this.camera.camera,
+    //       headCube = this.cubes.first.object,
+    //       cubesArray = this.cubes.toArray().map( ( { object } ) => object ),
+    //       rotateCamera = this.camera
+    //         ? timer( 0 ).pipe( tap( _ => camera.up.copy( vY ).applyQuaternion( headCube.quaternion ).normalize() ) )
+    //         : of( undefined );
+    //     return merge
+    //     (
+    //       timer( 0, this.speed ).pipe( take( this.length ), tap( idx => cubesArray[idx].rotateOnAxis( axis, angle ) ) ),
+    //       rotateCamera
+    //     );
+    //   }),
+    //   startWith( undefined )
+    // );
     this.snake$Change.emit( this.snake$ );
 
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );

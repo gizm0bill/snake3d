@@ -66,16 +66,24 @@ export class MainCom implements OnDestroy, AfterViewInit
   private arrowRight() { this.direction$.next( dirs.right ); }
 
   private direction$ = new Subject;
-  private loop$ = interval( 10, animationFrameScheduler )
-  .pipe
+  // private loop$ = interval( 10, animationFrameScheduler )
+  // .pipe
+  // (
+  //   map( _ => ({ time: Date.now(), deltaTime: null }) ),
+  //   scan( (previous, current) => ({ time: current.time, deltaTime: (current.time - previous.time) / 1000 }) )
+  // );
+  private loop$ = interval( 10, animationFrameScheduler ).pipe
   (
-    map( _ => ({ time: Date.now(), deltaTime: null }) ),
-    scan( (previous, current) => ({ time: current.time, deltaTime: (current.time - previous.time) / 1000 }) )
+    scan<any, { time: number, delta: number }>( previous =>
+    {
+      const time = performance.now();
+      return { time, delta: time - previous.time };
+    }, { time: performance.now(), delta: 0 } )
   );
 
   snakePosition = vZero.clone();
 
-  private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat() );
+  private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(), tap( _ => console.log( this.snakePosition ) ) );
 
   @HostListener( 'window:resize', ['$event'] )
   onWindowResize( event: any ) {
@@ -119,9 +127,9 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.loop$.pipe
     (
       withLatestFrom( this.snakeBehavior$ ),
-      tap( ([{ deltaTime }, _]) =>
+      tap( ([{ delta }, _]) =>
       {
-        this.snakePosition.add( vZ.clone().multiplyScalar( deltaTime * this.cubeSize ) );
+        // this.snakePosition.add( vZ.clone().multiplyScalar( delta * this.cubeSize / 1000 ) );
         // this.cubes.forEach( cube =>
         // {
         //   const cubeObj = cube.object;
