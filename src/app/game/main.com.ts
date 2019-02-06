@@ -2,13 +2,14 @@ import
 {
   Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ViewChildren, QueryList, ChangeDetectorRef
 } from '@angular/core';
-import { RendererCom, deg90, vY, vX, vZero } from '../three-js';
+import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
 import { Vector3, Spherical, LineBasicMaterial, Geometry, Line, Matrix4, CameraHelper } from 'three';
-import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge } from 'rxjs';
+import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge, Observable } from 'rxjs';
 import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
 import { ThirdPersonControlDir } from '../three-js/control';
 import { PerspectiveCameraDir } from '../three-js/camera';
+import { SnakeCom } from './snake.com';
 
 const dkd = 'document:keydown.';
 const dirs =
@@ -31,6 +32,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
   @ViewChild(ThirdPersonControlDir) control: ThirdPersonControlDir;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
+  @ViewChild(SnakeCom) snake: SnakeCom;
 
   cubeSize = 2;
   snakeSegments = [];
@@ -44,6 +46,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.snakeSegments = Array( 3 )
       .fill( undefined )
       .map( ( _, index ) => start.clone().sub( new Vector3( 0, 0, this.cubeSize * index ) ) );
+
   }
 
   @HostListener(`${dkd}w`)
@@ -70,6 +73,8 @@ export class MainCom implements OnDestroy, AfterViewInit
     scan( (previous, current) => ({ time: current.time, deltaTime: (current.time - previous.time) / 1000 }) )
   );
 
+  snakePosition = vZero.clone();
+
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat() );
 
   @HostListener( 'window:resize', ['$event'] )
@@ -88,7 +93,7 @@ export class MainCom implements OnDestroy, AfterViewInit
      theta: -( clientX / clientHeight ) * Math.PI * 2
     } );
     this.camera.camera.position.setFromSpherical( this.spherical );
-    this.camera.camera.lookAt( this.headCube.object.position );
+    this.camera.camera.lookAt( this.snakePosition );
   }
 
   @HostListener( 'document:wheel', ['$event.deltaY'] )
@@ -103,69 +108,33 @@ export class MainCom implements OnDestroy, AfterViewInit
   {
   }
 
-  headCube: MeshDir;
+  snakeBehavior$: Observable<any>;
+
   ngAfterViewInit()
   {
-    this.headCube = this.cubes.first;
-    const m = new LineBasicMaterial({ color: 0x0000ff });
-    const g = new Geometry;
-    console.log( this.headCube.object.up.clone().multiplyScalar(10) );
-    g.vertices.push( vZero );
-    g.vertices.push( this.headCube.object.up.clone().multiplyScalar(10) );
-    const l = new Line(g, m);
-    
-    this.headCube.object.add( l );
-    this.headCube.object.add( this.camera.camera );
-    const cameraHelper = new CameraHelper( this.camera.camera );
-    this.headCube.object.add( cameraHelper );
 
     this.cdr.detectChanges();
-
-    const
-      camera = this.camera.camera,
-      headCubeObj = this.headCube.object;
-
-    const snake$ = this.direction$.pipe
-    (
-      filter( dir => undefined !== dir ),
-      sampleTime( 1000 ),
-      mergeMap( ( [ axis, angle ]: [ Vector3, number ] ) =>
-      {
-        const
-          rotateCamera = timer( 0 ).pipe( tap( _ => camera.up.copy( vY ).applyQuaternion( headCubeObj.quaternion ).normalize() ) ),
-          cubesArray = this.cubes.toArray();
-        return merge
-        (
-          timer( 0, 1000 ).pipe
-          (
-            take( this.cubes.length ),
-            tap( idx => cubesArray[idx].object.rotateOnAxis( axis, angle ) ),
-          ),
-          rotateCamera,
-        );
-      } ),
-      startWith( undefined ),
-    );
 
     const comps = [0, 1, 2];
     this.loop$.pipe
     (
-      withLatestFrom( snake$ ),
+      withLatestFrom( this.snakeBehavior$ ),
       tap( ([{ deltaTime }, _]) =>
       {
-        this.cubes.forEach( cube =>
-        {
-          const cubeObj = cube.object;
-          cubeObj.translateZ( deltaTime * this.cubeSize );
-          // 'normalize' other axes
-          comps.forEach( compIdx =>
-          {
-            const comp = cubeObj.position.getComponent( compIdx );
-            if ( cubeObj.userData.lastPosition && comp === cubeObj.userData.lastPosition.getComponent( compIdx ) )
-              cubeObj.position.setComponent( compIdx, Math.round(comp) );
-          } );
-          cubeObj.userData.lastPosition = cube.object.position.clone();
-        } );
+        this.snakePosition.add( vZ.clone().multiplyScalar( deltaTime * this.cubeSize ) );
+        // this.cubes.forEach( cube =>
+        // {
+        //   const cubeObj = cube.object;
+        //   cubeObj.translateZ( deltaTime * this.cubeSize );
+        //   // 'normalize' other axes
+        //   comps.forEach( compIdx =>
+        //   {
+        //     const comp = cubeObj.position.getComponent( compIdx );
+        //     if ( cubeObj.userData.lastPosition && comp === cubeObj.userData.lastPosition.getComponent( compIdx ) )
+        //       cubeObj.position.setComponent( compIdx, Math.round(comp) );
+        //   } );
+        //   cubeObj.userData.lastPosition = cube.object.position.clone();
+        // } );
         this.zone.runOutsideAngular( () => this.childRenderer.render() );
       })
     ).subscribe();

@@ -1,10 +1,10 @@
 import { AfterViewInit, Input, QueryList, ContentChildren } from '@angular/core';
 import * as THREE from 'three';
-import { Vector3, Euler } from 'three';
+import { Object3D, Vector3, Euler } from 'three';
 
-export abstract class AObject3D<T extends THREE.Object3D> implements AfterViewInit
+export abstract class AObject3D<T extends Object3D> implements AfterViewInit
 {
-  @ContentChildren( AObject3D, { descendants: false } ) childNodes: QueryList<AObject3D<any>>;
+  @ContentChildren( AObject3D, { descendants: true } ) childNodes: QueryList<AObject3D<any>>;
 
   private _position: Vector3 = new Vector3( 0, 0, 0 );
   get position(): Vector3 { return this._position; }
@@ -43,7 +43,8 @@ export abstract class AObject3D<T extends THREE.Object3D> implements AfterViewIn
 
     if ( this.childNodes !== undefined && this.childNodes.length > 1 )
       this.childNodes.filter( i => i !== this && i.object !== undefined )
-        .forEach( i =>  this.addChild(i.object) );
+        .forEach( i =>  this.addChild( i.object ) );
+    this.childNodes.changes.subscribe( _ => { debugger; } )
   }
   protected addChild(object: THREE.Object3D): any
   {
