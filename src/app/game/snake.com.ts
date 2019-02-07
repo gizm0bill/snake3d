@@ -91,14 +91,14 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       filter( dir => !!dir ),
       sampleTime( this.speed ),
       withLatestFrom( this.impulse$ ),
-      mergeMap( ( [ [ axis, angle, pivot ], { time } ] ) =>
+      mergeMap( ( [ [ axis, angle, pivot ], { time } ]: [ [ Vector3, number, Vector3 ], { time: number, delta: number } ] ) =>
       {
         const
           camera = this.camera.camera,
           headCube = this.cubes.first.object,
           cubesArray = this.cubes.toArray().map( ( { object } ) => object ),
           rotateCamera = this.camera
-            ? timer( 0 ).pipe( tap( _ => camera.up.copy( vY ).applyQuaternion( headCube.quaternion ).normalize() ) )
+            ? timer( this.speed ).pipe( tap( _ => camera.up.copy( vY ).applyQuaternion( headCube.quaternion ).normalize() ) )
             : of( undefined );
         return merge
         (
@@ -107,11 +107,14 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             take( this.length ),
             tap( idx =>
             {
-              cubesArray[idx].userData.nextRotation = +this.speed + time;
-              cubesArray[idx].rotateOnAxis( axis, angle );
+              const p = pivot.clone().applyQuaternion( cubesArray[idx].quaternion ).multiplyScalar( this.size / 2 );
+              cubesArray[idx].userData.nextRotation = { axis, angle, timeLeft: +this.speed, pivot: p };
+              // cubesArray[idx].rotateOnAxis( axis, angle );
+              console.log( idx, '>', cubesArray[idx].position );
 
-              cubesArray[idx].position.add( pivot );
-              console.log( cubesArray[idx].children[0].position.add( pivot.clone().negate() ) );
+              cubesArray[idx].position.add( p );
+              cubesArray[idx].children[0].position.sub( p );
+
               // cubesArray[idx].translateZ( -this.size / 2 );
               // cubesArray[idx].translateX( this.size / 2 );
               // cubesArray[idx].children[0].translateZ( this.size / 2 );
@@ -126,10 +129,26 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.behavior$ = this.impulse$.pipe
     (
       withLatestFrom( direction$, ),
-      tap( ([ { time, delta } ]) => this.cubes.forEach( ({ object }) =>
+      tap( ([ { time, delta } ]) => this.cubes.forEach( ({ object }, idx ) =>
       {
         // console.log( typeof object.userData.nextRotation, typeof time, object.userData.nextRotation > time );
-        object.translateZ( delta * this.size / this.speed );
+        const nr = object.userData.nextRotation;
+        if ( nr )
+        {
+          if ( nr.timeLeft >= 0 )
+          {
+            object.rotateOnAxis( nr.axis, delta / +this.speed * nr.angle );
+            object.userData.nextRotation.timeLeft -= delta;
+          }
+          else
+          {
+            object.userData.nextRotation = undefined;
+            (nr.pivot as Vector3).applyQuaternion( object.quaternion );
+            object.position.sub( nr.pivot ) ;
+            object.children[0].position.copy( vZero );
+          }
+        }
+        else object.translateZ( delta * this.size / this.speed );
       } ) ),
     );
     this.behavior$Change.emit( this.behavior$ );
