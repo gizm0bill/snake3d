@@ -4,8 +4,8 @@ import
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
 import { Vector3, Spherical, LineBasicMaterial, Geometry, Line, Matrix4, CameraHelper } from 'three';
-import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge, Observable } from 'rxjs';
-import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take } from 'rxjs/operators';
+import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge, Observable, BehaviorSubject } from 'rxjs';
+import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take, share } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
 import { ThirdPersonControlDir } from '../three-js/control';
 import { PerspectiveCameraDir } from '../three-js/camera';
@@ -72,14 +72,6 @@ export class MainCom implements OnDestroy, AfterViewInit
   //   map( _ => ({ time: Date.now(), deltaTime: null }) ),
   //   scan( (previous, current) => ({ time: current.time, deltaTime: (current.time - previous.time) / 1000 }) )
   // );
-  private loop$ = interval( 10, animationFrameScheduler ).pipe
-  (
-    scan<any, { time: number, delta: number }>( previous =>
-    {
-      const time = performance.now();
-      return { time, delta: time - previous.time };
-    }, { time: performance.now(), delta: 0 } )
-  );
 
   snakePosition = vZero.clone();
 
@@ -116,8 +108,19 @@ export class MainCom implements OnDestroy, AfterViewInit
   {
   }
 
-  snakeBehavior$: Observable<any>;
+  private loop$ = interval( 10, animationFrameScheduler ).pipe
+  (
+    scan<any, { time: number, delta: number }>( previous =>
+    {
+      const time = performance.now();
+      return { time, delta: time - previous.time };
+    }, { time: performance.now(), delta: 0 } ),
+    share()
+  );
 
+  snakeBehavior$: Observable<any>;
+  private readonly _impulse$ = new BehaviorSubject<{ time: number, delta: number }>( undefined );
+  impulse$ = this._impulse$.pipe( filter( t => !!t ), share() );
   ngAfterViewInit()
   {
 
@@ -126,6 +129,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     const comps = [0, 1, 2];
     this.loop$.pipe
     (
+      tap( time => this._impulse$.next(time) ),
       withLatestFrom( this.snakeBehavior$ ),
       tap( ([{ delta }, _]) =>
       {

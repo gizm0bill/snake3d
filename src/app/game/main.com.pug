@@ -3,7 +3,7 @@
 //- three-orbit-controls
 three-renderer( #mainRenderer )
 
-  three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=5 positionY=5, positionZ=-10, #gameCamera="threePerspectiveCamera" )
+  three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=5 positionY=5, positionZ=-10, #gameCamera='threePerspectiveCamera' )
   
   three-scene
     
@@ -20,11 +20,13 @@ three-renderer( #mainRenderer )
       three-box-buffer-geometry( widthSegments=32, heightSegments=32 )
       game-box-material
 
-    game-snake( speed=1000, length=5, size=2, [(position)]="snakePosition", [camera]="gameCamera", [(snake$)]="snakeBehavior$" )
+    game-snake( speed=1000, length=5, size=2,
+      [impulse$]='impulse$',
+      [(position)]='snakePosition', [camera]='gameCamera', [(behavior$)]='snakeBehavior$' )
 
     //- three-group
-      three-mesh( *ngFor=" let segment of snakeSegments; first as f ", [position]="segment" )
+      three-mesh( *ngFor=' let segment of snakeSegments; first as f ', [position]='segment' )
         three-box-buffer-geometry( [width]='cubeSize * .75', [height]='cubeSize * .75', [depth]='cubeSize * .75' )
-        three-mesh-lambert-material( [color]=" f ? '#FF0000' : '#0000FF' " )
+        three-mesh-lambert-material( [color]=' f ? '#FF0000' : '#0000FF' ' )
 
       
