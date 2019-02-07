@@ -6,6 +6,7 @@ import { RoutingMod } from './routing.mod';
 import { BoxMaterialDir } from './box-material.dir';
 import { TestCom } from './test.com';
 import { SnakeCom } from './snake.com';
+import { SnakeSegmentDir } from './snake';
 
 @NgModule
 ({
@@ -13,6 +14,7 @@ import { SnakeCom } from './snake.com';
   [
     MainCom,
     SnakeCom,
+    SnakeSegmentDir,
     TestCom,
     BoxMaterialDir,
   ],

@@ -75,7 +75,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakePosition = vZero.clone();
 
-  private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(), tap( _ => console.log( this.snakePosition ) ) );
+  private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
 
   @HostListener( 'window:resize', ['$event'] )
   onWindowResize( event: any ) {

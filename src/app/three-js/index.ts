@@ -44,3 +44,4 @@ export * from './material';
 export * from './renderer.com';
 export * from './object';
 export * from './constants';
+export * from './object-3d';

@@ -1,18 +1,20 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input, forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
 import { Subject, timer, Observable, never, of, merge, BehaviorSubject } from 'rxjs';
 import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom } from 'rxjs/operators';
-import { Vector3, Group } from 'three';
+import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments } from 'three';
 import { MeshDir, deg90, vY, vX, vZero } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
+import { SnakeSegmentDir } from './snake/segment.dir';
 
-const dkd = 'document:keydown.';
-const dirs =
+interface IDir { [key: string]: [ Vector3, number, Vector3 ]; }
+const dkd = 'document:keydown.',
+dirs: IDir =
 {
-  up: [ vX, -deg90 ],
-  down: [ vX, deg90 ],
-  left: [ vY, deg90 ],
-  right: [ vY, -deg90 ],
+  up: [ vX, -deg90, new Vector3( 0, 1, -1 )  ],
+  down: [ vX, deg90, new Vector3( 0, -1, -1 ) ],
+  left: [ vY, deg90, new Vector3( 1, 0, -1 ) ],
+  right: [ vY, -deg90, new Vector3( -1, 0, -1 ) ],
 };
 
 @Component
@@ -24,7 +26,8 @@ const dirs =
 })
 export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChanges
 {
-  @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
+  // @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
+  @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
 
   // attached camera
   @Input() camera: ACamera<any>;
@@ -88,7 +91,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       filter( dir => !!dir ),
       sampleTime( this.speed ),
       withLatestFrom( this.impulse$ ),
-      mergeMap( ( [ [ axis, angle ], { time } ]: [ [ Vector3, number ], { time: number, delta: number } ] ) =>
+      mergeMap( ( [ [ axis, angle, pivot ], { time } ] ) =>
       {
         const
           camera = this.camera.camera,
@@ -106,6 +109,14 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             {
               cubesArray[idx].userData.nextRotation = +this.speed + time;
               cubesArray[idx].rotateOnAxis( axis, angle );
+
+              cubesArray[idx].position.add( pivot );
+              console.log( cubesArray[idx].children[0].position.add( pivot.clone().negate() ) );
+              // cubesArray[idx].translateZ( -this.size / 2 );
+              // cubesArray[idx].translateX( this.size / 2 );
+              // cubesArray[idx].children[0].translateZ( this.size / 2 );
+              // cubesArray[idx].children[0].translateX( -this.size / 2 );
+
             } ) ),
           rotateCamera
         );
@@ -117,7 +128,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       withLatestFrom( direction$, ),
       tap( ([ { time, delta } ]) => this.cubes.forEach( ({ object }) =>
       {
-        console.log( typeof object.userData.nextRotation, typeof time, object.userData.nextRotation > time );
+        // console.log( typeof object.userData.nextRotation, typeof time, object.userData.nextRotation > time );
         object.translateZ( delta * this.size / this.speed );
       } ) ),
     );
