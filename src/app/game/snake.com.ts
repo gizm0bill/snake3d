@@ -107,14 +107,13 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             take( this.length ),
             tap( idx =>
             {
-              const p = pivot.clone().applyQuaternion( cubesArray[idx].quaternion ).multiplyScalar( this.size / 2 );
-              cubesArray[idx].userData.nextRotation = { axis, angle, timeLeft: +this.speed, pivot: p };
+              const p = pivot.clone(), op = pivot.clone();
+              cubesArray[idx].children[0].position.sub( pivot );
+              p.applyQuaternion( cubesArray[idx].quaternion ).multiplyScalar( this.size / 2 );
+              cubesArray[idx].position.add( p );
+              cubesArray[idx].userData.nextRotation = { axis, angle, timeLeft: +this.speed, pivot: p, originalPivot: op };
               // cubesArray[idx].rotateOnAxis( axis, angle );
               console.log( idx, '>', cubesArray[idx].position );
-
-              cubesArray[idx].position.add( p );
-              cubesArray[idx].children[0].position.sub( p );
-
               // cubesArray[idx].translateZ( -this.size / 2 );
               // cubesArray[idx].translateX( this.size / 2 );
               // cubesArray[idx].children[0].translateZ( this.size / 2 );
@@ -125,7 +124,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         );
       }),
       startWith( undefined )
-    )
+    );
+
     this.behavior$ = this.impulse$.pipe
     (
       withLatestFrom( direction$, ),
@@ -143,8 +143,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           else
           {
             object.userData.nextRotation = undefined;
-            (nr.pivot as Vector3).applyQuaternion( object.quaternion );
-            object.position.sub( nr.pivot ) ;
+            nr.originalPivot.applyQuaternion( object.quaternion ).multiplyScalar( this.size / 2 );
+            object.position.sub( nr.originalPivot ) ;
             object.children[0].position.copy( vZero );
           }
         }
@@ -155,6 +155,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
+
+    setTimeout( () => this.direction$.next( dirs.left ), 100 );
   }
 
   ngOnChanges( changes: SimpleChanges )

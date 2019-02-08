@@ -1,5 +1,5 @@
 import { forwardRef, AfterViewInit, Directive, Input } from '@angular/core';
-import { AObject3D, vZero } from '../../three-js';
+import { AObject3D, vZero, RoundedBoxBufferGeometry } from '../../three-js';
 import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3 } from 'three';
 
 @Directive
@@ -12,7 +12,7 @@ export class SnakeSegmentDir extends AObject3D<LineSegments> implements AfterVie
   @Input() position = vZero.clone();
   ngAfterViewInit()
   {
-    let boxGeom = new BoxBufferGeometry( 2, 2, 2 );
+    let boxGeom = new RoundedBoxBufferGeometry( 2, 2, 2, 4, 4 );
     boxGeom = boxGeom.toNonIndexed() as BoxBufferGeometry;
     const boxMesh = new Mesh( boxGeom, new MeshPhongMaterial( { color: 0x2194CE } ) );
     boxMesh.scale.copy( new Vector3( .75, .75, .75) );

@@ -5,7 +5,7 @@ import { SceneDir } from './scene.dir';
 import { PerspectiveCameraDir } from './camera';
 import { OrbitControlsDir, ThirdPersonControlDir } from './control';
 import { LightMod } from './light';
-import { BoxBufferGeometryDir } from './geometry';
+import { BoxBufferGeometryDir, RoundedBoxBufferGeometryDir } from './geometry';
 import { MaterialMod } from './material';
 import { ObjectMod } from './object';
 import { HelperMod } from './helper';
@@ -20,6 +20,7 @@ import { HelperMod } from './helper';
     ThirdPersonControlDir,
     OrbitControlsDir,
     BoxBufferGeometryDir,
+    RoundedBoxBufferGeometryDir,
   ],
   exports:
   [
@@ -29,6 +30,7 @@ import { HelperMod } from './helper';
     ThirdPersonControlDir,
     OrbitControlsDir,
     BoxBufferGeometryDir,
+    RoundedBoxBufferGeometryDir,
 
     LightMod,
     HelperMod,

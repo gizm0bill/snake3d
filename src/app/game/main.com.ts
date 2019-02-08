@@ -82,7 +82,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.childRenderer.onResize( event );
   }
 
-  private spherical = new Spherical(5);
+  private spherical = new Spherical(10);
   @HostListener( 'document:mousemove', ['$event.clientX', '$event.clientY'] )
   mouseMove( clientX: number, clientY: number )
   {
@@ -99,7 +99,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   @HostListener( 'document:wheel', ['$event.deltaY'] )
   mouseWheel( deltaY: number )
   {
-    const radius = Math.max( 2.5, Math.min( 10, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
+    const radius = Math.max( 2.5, Math.min( 15, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
     this.spherical.radius = radius;
     this.camera.camera.position.setFromSpherical( this.spherical );
   }
