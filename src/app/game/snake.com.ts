@@ -156,7 +156,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
 
-    setTimeout( () => this.direction$.next( dirs.left ), 100 );
+    setTimeout( () => this.direction$.next( dirs.down ), 100 );
   }
 
   ngOnChanges( changes: SimpleChanges )
