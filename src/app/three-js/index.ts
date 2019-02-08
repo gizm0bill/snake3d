@@ -2,13 +2,13 @@ import { NgModule } from '@angular/core';
 import './enable.js';
 import { RendererCom } from './renderer.com';
 import { SceneDir } from './scene.dir';
-import { PerspectiveCameraDir } from './camera';
-import { OrbitControlsDir, ThirdPersonControlDir } from './control';
 import { LightMod } from './light';
-import { BoxBufferGeometryDir } from './geometry';
 import { MaterialMod } from './material';
 import { ObjectMod } from './object';
 import { HelperMod } from './helper';
+import { CameraMod } from './camera';
+import { GeometryMod } from './geometry';
+import { ControlMod } from './control';
 
 @NgModule
 ({
@@ -16,25 +16,18 @@ import { HelperMod } from './helper';
   [
     RendererCom,
     SceneDir,
-    PerspectiveCameraDir,
-    ThirdPersonControlDir,
-    OrbitControlsDir,
-    BoxBufferGeometryDir,
   ],
   exports:
   [
     RendererCom,
     SceneDir,
-    PerspectiveCameraDir,
-    ThirdPersonControlDir,
-    OrbitControlsDir,
-    BoxBufferGeometryDir,
-
+    CameraMod,
+    GeometryMod,
     LightMod,
     HelperMod,
     ObjectMod,
     MaterialMod,
-
+    ControlMod,
   ]
 })
 export class ThreeJsMod { }
