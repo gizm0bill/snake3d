@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input, forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
 import { Subject, timer, Observable, never, of, merge, BehaviorSubject, combineLatest } from 'rxjs';
 import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom } from 'rxjs/operators';
-import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments } from 'three';
+import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments, Quaternion } from 'three';
 import { MeshDir, deg90, vY, vX, vZero } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
@@ -115,12 +115,17 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             take( this.length ),
             tap( index =>
             {
-              if ( index === 0 ) console.log( 'has rotation' );
+              const currentCube = cubesArray[index];
+              // if ( index === 0 )
+              //   console.log( 'target:', currentCube.clone().rotateOnAxis( axis, angle ).quaternion );
               const p = pivot.clone();
-              cubesArray[index].children[0].position.sub( p );
-              p.applyQuaternion( cubesArray[index].quaternion ).multiplyScalar( this.size / 2 );
+              currentCube.children[0].position.sub( p );
+              p.applyQuaternion( currentCube.quaternion ).multiplyScalar( this.size / 2 );
               cubesArray[index].position.add( p );
-              cubesArray[index].userData.hasRotation = { axis, angle };
+              const q = new Quaternion;
+              q.setFromAxisAngle( axis, angle );
+              const quaternion = currentCube.quaternion.clone().multiply( q );
+              currentCube.userData.hasRotation = { axis, angle, quaternion };
             } )
           ),
           timer( this.speed - 1, this.speed ).pipe
@@ -128,13 +133,16 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             take( this.length ),
             tap( index =>
             {
-              if ( index === 0 ) console.log( 'end rotation' );
+              const currentCube = cubesArray[index];
+              // if ( index === 0 )
+              // {
+              // }
               const p = pivot.clone();
-              p.applyQuaternion( cubesArray[index].quaternion ).multiplyScalar( this.size / 2 );
-              cubesArray[index].position.sub( p ) ;
-              cubesArray[index].children[0].position.copy( vZero );
-              cubesArray[index].userData.hasRotation = undefined;
-              // cubesArray[index].quaternion.setFromAxisAngle( axis, angle );
+              p.applyQuaternion( currentCube.quaternion ).multiplyScalar( this.size / 2 );
+              currentCube.position.sub( p ) ;
+              currentCube.children[0].position.copy( vZero );
+              currentCube.quaternion.copy( currentCube.userData.hasRotation.quaternion );
+              currentCube.userData.hasRotation = undefined;
             })
           )
         );

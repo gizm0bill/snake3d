@@ -43,11 +43,19 @@ export class SnakeSegmentDir extends AObject3D<LineSegments> implements AfterVie
     const wireBoxGeom = new BoxBufferGeometry( 2, 2, 2 );
     const wireGeom = new WireframeGeometry( wireBoxGeom );
     const lines = new LineSegments( wireGeom );
-    Object.assign( lines.material, { depthTest: false, opacity: .5, transparent: true } );
+    Object.assign( lines.material, { depthTest: false, opacity: .75, transparent: true } );
     // boxMesh.position.set( 0, .5, .5 );
     // line.position.set( 0, 0, 0 );
     lines.add( this.boxMesh );
     lines.position.copy( this.position );
+
+    const wireBoxGeom1 = new BoxBufferGeometry( 2, 2, 2 );
+    const wireGeom1 = new WireframeGeometry( wireBoxGeom1 );
+    const lines1 = new LineSegments( wireGeom1 );
+    Object.assign( lines.material, { depthTest: false, opacity: .5, transparent: true } );
+
+    lines1.add( lines );
+
     this._object = lines;
     super.ngAfterViewInit();
   }

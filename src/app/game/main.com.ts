@@ -96,7 +96,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   @HostListener( 'document:wheel', ['$event.deltaY'] )
   mouseWheel( deltaY: number )
   {
-    const radius = Math.max( 2.5, Math.min( 15, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
+    const radius = Math.max( 2.5, Math.min( 25, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
     this.spherical.radius = radius;
     this.camera.camera.position.setFromSpherical( this.spherical );
   }

@@ -8,7 +8,7 @@ three-renderer( #mainRenderer )
   three-scene
     
     three-axes-helper( size=64 )
-    three-grid-helper( size=128, divisions=128 )
+    three-grid-helper( size=128, divisions=64 )
 
     three-ambient-light( color='#000000' )
 
@@ -16,17 +16,8 @@ three-renderer( #mainRenderer )
     three-point-light( color='#FFFFFF', position=' 70, 30, 50 ' )
     three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
 
-    //- three-mesh
-      three-box-buffer-geometry( widthSegments=32, heightSegments=32 )
-      game-box-material
-
     game-snake( speed=3000, length=5, size=2,
       [impulse$]='impulse$',
       [(position)]='snakePosition', [camera]='gameCamera', [(behavior$)]='snakeBehavior$' )
-
-    //- three-group
-      three-mesh( *ngFor=' let segment of snakeSegments; first as f ', [position]='segment' )
-        three-box-buffer-geometry( [width]='cubeSize * .75', [height]='cubeSize * .75', [depth]='cubeSize * .75' )
-        three-mesh-lambert-material( [color]=' f ? '#FF0000' : '#0000FF' ' )
 
       
