@@ -1,5 +1,5 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input, forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
-import { Subject, timer, Observable, never, of, merge, BehaviorSubject } from 'rxjs';
+import { Subject, timer, Observable, never, of, merge, BehaviorSubject, combineLatest } from 'rxjs';
 import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom } from 'rxjs/operators';
 import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments } from 'three';
 import { MeshDir, deg90, vY, vX, vZero } from '../three-js';
@@ -47,6 +47,12 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   @Input() impulse$: Observable<{ time: number, delta: number}>;
 
+  private _lookAtPosition = new Vector3;
+  get lookAtPosition()
+  {
+    return this.cubes.first.object.children[0].position;
+  }
+
   ngAfterViewInit()
   {
     this.segments = Array( +this.length )
@@ -61,7 +67,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       {
         this.positionChange.emit( this.cubes.first.object.position );
         // attach camera to head
-        if ( this.camera ) this.cubes.first.object.add( this.camera.camera );
+        if ( this.camera ) this.cubes.first.object.children[0].add( this.camera.camera );
       }
     });
 
@@ -90,8 +96,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     (
       filter( dir => !!dir ),
       sampleTime( this.speed ),
-      withLatestFrom( this.impulse$ ),
-      mergeMap( ( [ [ axis, angle, pivot ], { time } ]: [ [ Vector3, number, Vector3 ], { time: number, delta: number } ] ) =>
+      // withLatestFrom( this.impulse$ ),
+      mergeMap( ( [ axis, angle, pivot ]: [ Vector3, number, Vector3 ] ) =>
       {
         const
           camera = this.camera.camera,
@@ -100,6 +106,35 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           rotateCamera = this.camera
             ? timer( this.speed ).pipe( tap( _ => camera.up.copy( vY ).applyQuaternion( headCube.quaternion ).normalize() ) )
             : of( undefined );
+        return merge
+        (
+          timer( 0, this.speed ).pipe
+          (
+            take( this.length ),
+            tap( index =>
+            {
+              if ( index === 0 ) console.log( 'has rotation' );
+              const p = pivot.clone();
+              cubesArray[index].children[0].position.sub( p );
+              p.applyQuaternion( cubesArray[index].quaternion ).multiplyScalar( this.size / 2 );
+              cubesArray[index].position.add( p );
+              cubesArray[index].userData.hasRotation = { axis, angle };
+            } )
+          ),
+          timer( this.speed - 1, this.speed ).pipe
+          (
+            take( this.length ),
+            tap( index =>
+            {
+              if ( index === 0 ) console.log( 'end rotation' );
+              const p = pivot.clone();
+              p.applyQuaternion( cubesArray[index].quaternion ).multiplyScalar( this.size / 2 );
+              cubesArray[index].position.sub( p ) ;
+              cubesArray[index].children[0].position.copy( vZero );
+              cubesArray[index].userData.hasRotation = undefined;
+            })
+          )
+        );
         return merge
         (
           timer( 0, this.speed ).pipe
@@ -131,24 +166,14 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       withLatestFrom( direction$, ),
       tap( ([ { time, delta } ]) => this.cubes.forEach( ({ object }, idx ) =>
       {
-        // console.log( typeof object.userData.nextRotation, typeof time, object.userData.nextRotation > time );
-        const nr = object.userData.nextRotation;
-        if ( nr )
+        const hasRotation = object.userData.hasRotation;
+        if ( hasRotation )
         {
-          if ( nr.timeLeft >= 0 )
-          {
-            object.rotateOnAxis( nr.axis, delta / +this.speed * nr.angle );
-            object.userData.nextRotation.timeLeft -= delta;
-          }
-          else
-          {
-            object.userData.nextRotation = undefined;
-            nr.originalPivot.applyQuaternion( object.quaternion ).multiplyScalar( this.size / 2 );
-            object.position.sub( nr.originalPivot ) ;
-            object.children[0].position.copy( vZero );
-          }
+          object.rotateOnAxis( hasRotation.axis, delta / +this.speed * hasRotation.angle );
+          if ( idx === 0 ) this.camera.camera.up.copy( vY ).applyQuaternion( object.quaternion ).normalize();
         }
-        else object.translateZ( delta * this.size / this.speed );
+        else
+          object.translateZ( delta * this.size / this.speed );
       } ) ),
     );
     this.behavior$Change.emit( this.behavior$ );
@@ -156,7 +181,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
 
-    setTimeout( () => this.direction$.next( dirs.down ), 100 );
+    // setTimeout( () => this.direction$.next( dirs.down ), 100 );
   }
 
   ngOnChanges( changes: SimpleChanges )

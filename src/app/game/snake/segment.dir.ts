@@ -2,7 +2,6 @@ import { forwardRef, AfterViewInit, Directive, Input } from '@angular/core';
 import { AObject3D, vZero } from '../../three-js';
 import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape } from 'three';
 
-
 function createBoxWithRoundedEdges( width, height, depth, radius0, smoothness )
 {
   const shape = new Shape();
@@ -36,19 +35,28 @@ function createBoxWithRoundedEdges( width, height, depth, radius0, smoothness )
 export class SnakeSegmentDir extends AObject3D<LineSegments> implements AfterViewInit
 {
   @Input() position = vZero.clone();
+  private boxMesh: Mesh;
   ngAfterViewInit()
   {
-    const boxMesh = new Mesh( createBoxWithRoundedEdges( 2, 2, 2, .2, 16 ), new MeshPhongMaterial( { color: 0x2194CE } ) );
-    boxMesh.scale.copy( new Vector3( .75, .75, .75) );
+    this.boxMesh = new Mesh( createBoxWithRoundedEdges( 2, 2, 2, .2, 16 ), new MeshPhongMaterial( { color: 0x2194CE } ) );
+    this.boxMesh.scale.copy( new Vector3( .75, .75, .75) );
     const wireBoxGeom = new BoxBufferGeometry( 2, 2, 2 );
     const wireGeom = new WireframeGeometry( wireBoxGeom );
     const lines = new LineSegments( wireGeom );
     Object.assign( lines.material, { depthTest: false, opacity: .5, transparent: true } );
     // boxMesh.position.set( 0, .5, .5 );
     // line.position.set( 0, 0, 0 );
-    lines.add( boxMesh );
+    lines.add( this.boxMesh );
     lines.position.copy( this.position );
     this._object = lines;
     super.ngAfterViewInit();
+  }
+
+  private actualPosition = new Vector3;
+  get lookAtPosition(): Vector3
+  {
+    this.boxMesh.localToWorld( this.actualPosition );
+    console.log( this.actualPosition );
+    return this.actualPosition;
   }
 }

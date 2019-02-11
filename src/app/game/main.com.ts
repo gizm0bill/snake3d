@@ -3,11 +3,10 @@ import
   Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ViewChildren, QueryList, ChangeDetectorRef
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
-import { Vector3, Spherical, LineBasicMaterial, Geometry, Line, Matrix4, CameraHelper } from 'three';
+import { Vector3, Spherical} from 'three';
 import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge, Observable, BehaviorSubject } from 'rxjs';
 import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take, share } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
-import { ThirdPersonControlDir } from '../three-js/control';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
 
@@ -30,7 +29,6 @@ export class MainCom implements OnDestroy, AfterViewInit
 {
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
-  @ViewChild(ThirdPersonControlDir) control: ThirdPersonControlDir;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
   @ViewChild(SnakeCom) snake: SnakeCom;
 
@@ -93,6 +91,7 @@ export class MainCom implements OnDestroy, AfterViewInit
      theta: -( clientX / clientHeight ) * Math.PI * 2
     } );
     this.camera.camera.position.setFromSpherical( this.spherical );
+    console.log( this.snakePosition );
     this.camera.camera.lookAt( this.snakePosition );
   }
 
