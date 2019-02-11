@@ -50,7 +50,9 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   private _lookAtPosition = new Vector3;
   get lookAtPosition()
   {
-    return this.cubes.first.object.children[0].position;
+    this._lookAtPosition.copy(this.cubes.first.object.children[0].position);
+    this.cubes.first.object.children[0].localToWorld(this._lookAtPosition);
+    return this._lookAtPosition;
   }
 
   ngAfterViewInit()
@@ -132,6 +134,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
               cubesArray[index].position.sub( p ) ;
               cubesArray[index].children[0].position.copy( vZero );
               cubesArray[index].userData.hasRotation = undefined;
+              // cubesArray[index].quaternion.setFromAxisAngle( axis, angle );
             })
           )
         );
@@ -181,7 +184,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
 
-    // setTimeout( () => this.direction$.next( dirs.down ), 100 );
+    setTimeout( () => this.direction$.next( dirs.left ), 100 );
   }
 
   ngOnChanges( changes: SimpleChanges )

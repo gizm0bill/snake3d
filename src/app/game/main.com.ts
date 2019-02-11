@@ -28,7 +28,6 @@ const dirs =
 export class MainCom implements OnDestroy, AfterViewInit
 {
   @ViewChild(RendererCom) childRenderer: RendererCom;
-  @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
   @ViewChild(SnakeCom) snake: SnakeCom;
 
@@ -91,8 +90,7 @@ export class MainCom implements OnDestroy, AfterViewInit
      theta: -( clientX / clientHeight ) * Math.PI * 2
     } );
     this.camera.camera.position.setFromSpherical( this.spherical );
-    console.log( this.snakePosition );
-    this.camera.camera.lookAt( this.snakePosition );
+    this.camera.camera.lookAt( this.snake.lookAtPosition );
   }
 
   @HostListener( 'document:wheel', ['$event.deltaY'] )
