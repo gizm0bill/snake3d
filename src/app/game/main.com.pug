@@ -16,8 +16,7 @@ three-renderer( #mainRenderer )
     three-point-light( color='#FFFFFF', position=' 70, 30, 50 ' )
     three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
 
-    game-snake( speed=3000, length=5, size=2,
-      [impulse$]='impulse$',
-      [(position)]='snakePosition', [camera]='gameCamera', [(behavior$)]='snakeBehavior$' )
+    game-snake-1( speed=3000, length=5, size=2,
+      [(position)]='snakePosition', [camera]='gameCamera', [(loop$)]="snakeBehavior$" )
 
       

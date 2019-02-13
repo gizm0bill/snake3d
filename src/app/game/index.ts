@@ -7,6 +7,7 @@ import { BoxMaterialDir } from './box-material.dir';
 import { TestCom } from './test.com';
 import { SnakeCom } from './snake.com';
 import { SnakeSegmentDir } from './snake';
+import { Snake1Com } from './snake.1.com';
 
 @NgModule
 ({
@@ -14,6 +15,7 @@ import { SnakeSegmentDir } from './snake';
   [
     MainCom,
     SnakeCom,
+    Snake1Com,
     SnakeSegmentDir,
     TestCom,
     BoxMaterialDir,

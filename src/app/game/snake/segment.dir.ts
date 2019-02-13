@@ -1,6 +1,7 @@
 import { forwardRef, AfterViewInit, Directive, Input } from '@angular/core';
 import { AObject3D, vZero } from '../../three-js';
 import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape } from 'three';
+import { Observable } from 'rxjs';
 
 function createBoxWithRoundedEdges( width, height, depth, radius0, smoothness )
 {
@@ -36,6 +37,8 @@ export class SnakeSegmentDir extends AObject3D<LineSegments> implements AfterVie
 {
   @Input() position = vZero.clone();
   private boxMesh: Mesh;
+  @Input() loop$: Observable<any>;
+
   ngAfterViewInit()
   {
     this.boxMesh = new Mesh( createBoxWithRoundedEdges( 2, 2, 2, .2, 16 ), new MeshPhongMaterial( { color: 0x2194CE } ) );
@@ -57,14 +60,9 @@ export class SnakeSegmentDir extends AObject3D<LineSegments> implements AfterVie
     lines1.add( lines );
 
     this._object = lines;
-    super.ngAfterViewInit();
-  }
 
-  private actualPosition = new Vector3;
-  get lookAtPosition(): Vector3
-  {
-    this.boxMesh.localToWorld( this.actualPosition );
-    console.log( this.actualPosition );
-    return this.actualPosition;
+    // this.loop$.subscribe( (...args: any[]) => console.log(args) );
+
+    super.ngAfterViewInit();
   }
 }

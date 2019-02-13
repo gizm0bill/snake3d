@@ -4,11 +4,12 @@ import
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
 import { Vector3, Spherical} from 'three';
-import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge, Observable, BehaviorSubject } from 'rxjs';
+import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge, Observable, BehaviorSubject, from } from 'rxjs';
 import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take, share } from 'rxjs/operators';
 import { MeshDir } from '../three-js/object';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
+import { Snake1Com } from './snake.1.com';
 
 const dkd = 'document:keydown.';
 const dirs =
@@ -29,7 +30,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 {
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
-  @ViewChild(SnakeCom) snake: SnakeCom;
+  @ViewChild(Snake1Com) snake: Snake1Com;
 
   cubeSize = 2;
   snakeSegments = [];
@@ -105,19 +106,20 @@ export class MainCom implements OnDestroy, AfterViewInit
   {
   }
 
-  private loop$ = interval( 10, animationFrameScheduler ).pipe
-  (
-    scan<any, { time: number, delta: number }>( previous =>
-    {
-      const time = performance.now();
-      return { time, delta: time - previous.time };
-    }, { time: performance.now(), delta: 0 } ),
-    share()
-  );
+    private loop$ = interval( 10, animationFrameScheduler ).pipe
+    (
+      scan<any, { time: number, delta: number }>( previous =>
+      {
+        const time = performance.now();
+        return { time, delta: time - previous.time };
+      }, { time: performance.now(), delta: 0 } ),
+      share()
+    );
 
-  snakeBehavior$: Observable<any>;
-  private readonly _impulse$ = new BehaviorSubject<{ time: number, delta: number }>( undefined );
-  impulse$ = this._impulse$.pipe( filter( t => !!t ), share() );
+  snakeBehavior$ = from(this.loop$);
+
+  // private readonly _impulse$ = new BehaviorSubject<{ time: number, delta: number }>( undefined );
+  // impulse$ = this._impulse$.pipe( filter( t => !!t ), share() );
   ngAfterViewInit()
   {
 
@@ -126,7 +128,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     const comps = [0, 1, 2];
     this.loop$.pipe
     (
-      tap( time => this._impulse$.next(time) ),
+      // tap( time => this._impulse$.next(time) ),
       withLatestFrom( this.snakeBehavior$ ),
       tap( ([{ delta }, _]) =>
       {
