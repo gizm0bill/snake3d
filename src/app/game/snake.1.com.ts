@@ -51,8 +51,7 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
   private _lookAtPosition = new Vector3;
   get lookAtPosition()
   {
-    this._lookAtPosition.copy(this.cubes.first.object.children[0].position);
-    this.cubes.first.object.children[0].localToWorld(this._lookAtPosition);
+    this.cubes.first.object.children[0].getWorldPosition(this._lookAtPosition);
     return this._lookAtPosition;
   }
 

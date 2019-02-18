@@ -134,9 +134,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             tap( index =>
             {
               const currentCube = cubesArray[index];
-              // if ( index === 0 )
-              // {
-              // }
               const p = pivot.clone();
               p.applyQuaternion( currentCube.quaternion ).multiplyScalar( this.size / 2 );
               currentCube.position.sub( p ) ;
@@ -145,28 +142,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
               currentCube.userData.hasRotation = undefined;
             })
           )
-        );
-        return merge
-        (
-          timer( 0, this.speed ).pipe
-          (
-            take( this.length ),
-            tap( idx =>
-            {
-              const p = pivot.clone(), op = pivot.clone();
-              cubesArray[idx].children[0].position.sub( pivot );
-              p.applyQuaternion( cubesArray[idx].quaternion ).multiplyScalar( this.size / 2 );
-              cubesArray[idx].position.add( p );
-              cubesArray[idx].userData.nextRotation = { axis, angle, timeLeft: +this.speed, pivot: p, originalPivot: op };
-              // cubesArray[idx].rotateOnAxis( axis, angle );
-              console.log( idx, '>', cubesArray[idx].position );
-              // cubesArray[idx].translateZ( -this.size / 2 );
-              // cubesArray[idx].translateX( this.size / 2 );
-              // cubesArray[idx].children[0].translateZ( this.size / 2 );
-              // cubesArray[idx].children[0].translateX( -this.size / 2 );
-
-            } ) ),
-          rotateCamera
         );
       }),
       startWith( undefined )
