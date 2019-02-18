@@ -1,6 +1,6 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input, forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
 import { Subject, timer, Observable, never, of, merge, BehaviorSubject, combineLatest } from 'rxjs';
-import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom } from 'rxjs/operators';
+import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom, scan, share } from 'rxjs/operators';
 import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments, Quaternion } from 'three';
 import { MeshDir, deg90, vY, vX, vZero } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -76,9 +76,32 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
     });
 
     const sampledLoop$ = this.loop$.pipe( sampleTime( this.speed ) );
-    this.loop$Change.emit( sampledLoop$.pipe( tap( _ => this.cubes.forEach( cube => cube.object.translateZ( this.size ) )) ) );
+    this.loop$Change.emit( this.loop$ );
 
-    this.subLoop$ = this.loop$.pipe( withLatestFrom( sampledLoop$ ) );
+    this.subLoop$ = this.loop$.pipe
+    (
+      scan<any, any>( (previous, current) =>
+      {
+        current.futureTime = previous.futureTime;
+        if ( current.time > previous.futureTime  )
+        {
+          this.cubes.forEach( cube => cube.object.translateZ( this.size ) );
+          const dt = current.time - current.futureTime;
+          if ( dt > this.speed )
+          {
+            current.delta = 16.66;
+            current.futureTime = current.time + current.delta;
+          }
+          else
+          {
+            current.delta = current.time - current.futureTime;
+            current.futureTime += this.speed - dt;
+          }
+        }
+        return current;
+      }, { futureTime: performance.now() } ),
+      share(),
+    );
 
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();

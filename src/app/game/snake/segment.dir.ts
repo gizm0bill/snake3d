@@ -2,6 +2,7 @@ import { forwardRef, AfterViewInit, Directive, Input } from '@angular/core';
 import { AObject3D, vZero } from '../../three-js';
 import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape } from 'three';
 import { Observable } from 'rxjs';
+import { scan } from 'rxjs/operators';
 
 function createBoxWithRoundedEdges( width, height, depth, radius0, smoothness )
 {
@@ -46,9 +47,11 @@ export class SnakeSegmentDir extends AObject3D<LineSegments> implements AfterVie
     const wireBoxGeom = new BoxBufferGeometry( 2, 2, 2 );
     const wireGeom = new WireframeGeometry( wireBoxGeom );
     const lines = new LineSegments( wireGeom );
-    Object.assign( lines.material, { depthTest: false, opacity: .75, transparent: true } );
+    Object.assign( lines.material, { depthTest: false, opacity: .1, transparent: true, needsUpdate: true } );
     // boxMesh.position.set( 0, .5, .5 );
     // line.position.set( 0, 0, 0 );
+    this.boxMesh.position.setZ( -2 );
+    this.boxMesh.name = 'segment';
     lines.add( this.boxMesh );
     lines.position.copy( this.position );
 
@@ -61,7 +64,17 @@ export class SnakeSegmentDir extends AObject3D<LineSegments> implements AfterVie
 
     this._object = lines;
 
-    // this.loop$.subscribe( (...args: any[]) => console.log(args) );
+    this.loop$.pipe(
+      scan<any, any>( (previous, current) =>
+      {
+        if ( current.futureTime !== previous.futureTime )
+        {
+          this.boxMesh.position.setZ( -2 );
+        }
+        this.boxMesh.translateZ( current.delta * 2 / 3000 );
+        return current;
+      }, { futureTime: null } ) )
+      .subscribe();
 
     super.ngAfterViewInit();
   }
