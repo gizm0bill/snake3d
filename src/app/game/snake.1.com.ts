@@ -1,6 +1,6 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input, forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
 import { Subject, timer, Observable, never, of, merge, BehaviorSubject, combineLatest } from 'rxjs';
-import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom, scan, share } from 'rxjs/operators';
+import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom, scan, share, delay } from 'rxjs/operators';
 import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments, Quaternion } from 'three';
 import { MeshDir, deg90, vY, vX, vZero } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -48,12 +48,7 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
   @Input() loop$: Observable<{ time: number, delta: number}>;
   @Output() loop$Change = new EventEmitter<Observable<any>>();
 
-  private _lookAtPosition = new Vector3;
-  get lookAtPosition()
-  {
-    this.cubes.first.object.children[0].getWorldPosition(this._lookAtPosition);
-    return this._lookAtPosition;
-  }
+  get lookAtPosition(){ return this.cubes.first.lookAt; }
 
   subLoop$: Observable<any>;
   ngAfterViewInit()
@@ -70,11 +65,10 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
       {
         this.positionChange.emit( this.cubes.first.object.position );
         // attach camera to head
-        if ( this.camera ) this.cubes.first.object.children[0].add( this.camera.camera );
+        if ( this.camera ) this.cubes.first.object.children[0].children[0].add( this.camera.camera );
       }
     });
 
-    const sampledLoop$ = this.loop$.pipe( sampleTime( this.speed ) );
     this.loop$Change.emit( this.loop$ );
 
     this.subLoop$ = this.loop$.pipe
@@ -105,14 +99,14 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
 
-    // setTimeout( () => this.direction$.next( dirs.left ), 100 );
+    setTimeout( () => this.direction$.next( dirs.left ), 900 );
   }
 
   ngOnChanges( changes: SimpleChanges )
   {
 
   }
-  private direction$ = new Subject<any[]>();
+  direction$ = new Subject<any[]>();
 
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)

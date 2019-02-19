@@ -132,7 +132,7 @@ export class MainCom implements OnDestroy, AfterViewInit
       withLatestFrom( this.snakeBehavior$ ),
       tap( ([{ delta }, _]) =>
       {
-        this.spherical.theta += 0.01;
+        this.spherical.theta += 0.005;
         this.camera.camera.lookAt( this.snake.lookAtPosition );
         this.camera.camera.position.setFromSpherical( this.spherical );
 

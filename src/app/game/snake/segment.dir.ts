@@ -1,10 +1,10 @@
-import { forwardRef, AfterViewInit, Directive, Input } from '@angular/core';
+import { forwardRef, AfterViewInit, Directive, Input, Output } from '@angular/core';
 import { AObject3D, vZero } from '../../three-js';
-import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D } from 'three';
+import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion } from 'three';
 import { Observable } from 'rxjs';
-import { scan } from 'rxjs/operators';
+import { scan, withLatestFrom, startWith, distinctUntilChanged, map } from 'rxjs/operators';
 
-function createBoxWithRoundedEdges( width, height, depth, radius0, smoothness )
+function createBoxWithRoundedEdges( width: number, height: number, depth: number, radius0: number, smoothness: number )
 {
   const shape = new Shape();
   const eps = 0.00001;
@@ -36,44 +36,78 @@ function createBoxWithRoundedEdges( width, height, depth, radius0, smoothness )
 })
 export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewInit
 {
+  @Input() size = 1;
   @Input() position = vZero.clone();
-  private boxMesh: Mesh;
   @Input() loop$: Observable<any>;
+  @Input() direction$: Observable<[ Vector3, number, Vector3 ]>;
 
+  private _lookAtPosition = new Vector3;
+  @Output() get lookAt()
+  {
+    this.cube.getWorldPosition( this._lookAtPosition );
+    return this._lookAtPosition;
+  }
+
+  private cube: Mesh;
+  private innerBox: LineSegments;
+  private outerBox: LineSegments;
+  // private innerBox: Object3D;
+  // private outerBox: Object3D;
   ngAfterViewInit()
   {
-    this.boxMesh = new Mesh( createBoxWithRoundedEdges( 2, 2, 2, .2, 16 ), new MeshPhongMaterial( { color: 0x2194CE } ) );
-    this.boxMesh.scale.copy( new Vector3( .75, .75, .75) );
-    const wireBoxGeom = new BoxBufferGeometry( 2, 2, 2 );
+    this.cube = new Mesh
+    (
+      createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 ),
+      new MeshPhongMaterial( { color: 0x2194CE } )
+    );
+    this.cube.scale.copy( new Vector3( .75, .75, .75) );
+    this.cube.position.setZ( -this.size );
+
+    const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
     const wireGeom = new WireframeGeometry( wireBoxGeom );
-    // const lines = new LineSegments( wireGeom );
-    // Object.assign( lines.material, { depthTest: false, opacity: .1, transparent: true, needsUpdate: true } );
-    const lines = new Object3D;
-    this.boxMesh.position.setZ( -2 );
-    this.boxMesh.name = 'segment';
-    lines.add( this.boxMesh );
-    lines.position.copy( this.position );
+    this.innerBox = new LineSegments( wireGeom );
+    Object.assign( this.innerBox.material, { depthTest: false, color: new Color(0xAA33FF), opacity: .5, transparent: true } );
+    this.innerBox.add( this.cube ); 
 
-    const wireBoxGeom1 = new BoxBufferGeometry( 2, 2, 2 );
+    const wireBoxGeom1 = new BoxBufferGeometry( this.size, this.size, this.size );
     const wireGeom1 = new WireframeGeometry( wireBoxGeom1 );
-    const lines1 = new LineSegments( wireGeom1 );
+    this.outerBox = new LineSegments( wireGeom1 );
+    Object.assign( this.outerBox.material, { depthTest: false, color: new Color(0xAA9900), opacity: .25, transparent: true } );
+    this.outerBox.add( this.innerBox );
 
-    lines1.add( lines );
-
-    this._object = lines;
-
-    this.loop$.pipe(
-      scan<any, any>( (previous, current) =>
+    this._object = this.outerBox;
+    this.loop$.pipe
+    (
+      withLatestFrom( this.direction$.pipe
+      (
+        distinctUntilChanged(),
+        map( _ => { debugger; } ),
+        startWith( [ undefined ] ),
+      ) ),
+      scan<any, any>( ( [ previousTime ] , [ currentTime, [ axis, angle, pivot ] ] ) =>
       {
-        if ( current.futureTime !== previous.futureTime )
+        if ( !!axis )
         {
-          this.boxMesh.position.setZ( -2 );
-          lines.updateMatrixWorld(true);
+          const p = pivot.clone();
+          this.cube.position.sub( p );
+          p.applyQuaternion( this.innerBox.quaternion ).multiplyScalar( this.size / 2 );
+          this.innerBox.position.add( p );
+          const q = new Quaternion;
+          q.setFromAxisAngle( axis, angle );
+          const quaternion = this.innerBox.quaternion.clone().multiply( q );
+              // currentCube.userData.hasRotation = { axis, angle, quaternion };
         }
-        this.boxMesh.translateZ( current.delta * 2 / 3000 );
-        return current;
-      }, { futureTime: null } ) )
-      .subscribe();
+        if ( currentTime.futureTime !== previousTime.futureTime )
+        {
+          this.cube.position.setZ( -2 );
+          this.outerBox.updateMatrixWorld(true);
+          this.innerBox.updateMatrixWorld(true);
+        }
+        this.cube.translateZ( currentTime.delta * 2 / 3000 );
+        return [ currentTime, [ 'wtf', 'ok', 'no' ] ];
+      }, [{ futureTime: null }] )
+    )
+    .subscribe();
 
     super.ngAfterViewInit();
   }
