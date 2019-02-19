@@ -81,13 +81,8 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       withLatestFrom( this.direction$.pipe
       (
         distinctUntilChanged(),
-        map( _ => { debugger; } ),
-        startWith( [ undefined ] ),
-      ) ),
-      scan<any, any>( ( [ previousTime ] , [ currentTime, [ axis, angle, pivot ] ] ) =>
-      {
-        if ( !!axis )
-        {
+        map( ([ axis, angle, pivot ]) => {
+          debugger;
           const p = pivot.clone();
           this.cube.position.sub( p );
           p.applyQuaternion( this.innerBox.quaternion ).multiplyScalar( this.size / 2 );
@@ -96,7 +91,12 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           q.setFromAxisAngle( axis, angle );
           const quaternion = this.innerBox.quaternion.clone().multiply( q );
               // currentCube.userData.hasRotation = { axis, angle, quaternion };
-        }
+          
+        } ),
+        startWith( [ undefined ] ),
+      ) ),
+      scan<any, any>( ( [ previousTime ] , [ currentTime ] ) =>
+      {
         if ( currentTime.futureTime !== previousTime.futureTime )
         {
           this.cube.position.setZ( -2 );
