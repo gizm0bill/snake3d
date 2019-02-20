@@ -1,8 +1,8 @@
 import { forwardRef, AfterViewInit, Directive, Input, Output } from '@angular/core';
 import { AObject3D, vZero } from '../../three-js';
-import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion } from 'three';
-import { Observable } from 'rxjs';
-import { scan, withLatestFrom, startWith, distinctUntilChanged, map } from 'rxjs/operators';
+import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color } from 'three';
+import { Observable, of } from 'rxjs';
+import { scan, withLatestFrom, startWith, switchAll } from 'rxjs/operators';
 
 function createBoxWithRoundedEdges( width: number, height: number, depth: number, radius0: number, smoothness: number )
 {
@@ -39,7 +39,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   @Input() size = 1;
   @Input() position = vZero.clone();
   @Input() loop$: Observable<any>;
-  @Input() direction$: Observable<[ Vector3, number, Vector3 ]>;
+  @Input() direction$: Observable<any>;
 
   private _lookAtPosition = new Vector3;
   @Output() get lookAt()
@@ -67,7 +67,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     const wireGeom = new WireframeGeometry( wireBoxGeom );
     this.innerBox = new LineSegments( wireGeom );
     Object.assign( this.innerBox.material, { depthTest: false, color: new Color(0xAA33FF), opacity: .5, transparent: true } );
-    this.innerBox.add( this.cube ); 
+    this.innerBox.add( this.cube );
 
     const wireBoxGeom1 = new BoxBufferGeometry( this.size, this.size, this.size );
     const wireGeom1 = new WireframeGeometry( wireBoxGeom1 );
@@ -76,27 +76,21 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     this.outerBox.add( this.innerBox );
 
     this._object = this.outerBox;
+
+    this.direction$.pipe
+    (
+      scan( (prev, current) =>
+      {
+        return of( current, undefined );
+      }, undefined ),
+      switchAll()
+    ).subscribe( _ => { debugger; } );
+
     this.loop$.pipe
     (
-      withLatestFrom( this.direction$.pipe
-      (
-        distinctUntilChanged(),
-        map( ([ axis, angle, pivot ]) => {
-          debugger;
-          const p = pivot.clone();
-          this.cube.position.sub( p );
-          p.applyQuaternion( this.innerBox.quaternion ).multiplyScalar( this.size / 2 );
-          this.innerBox.position.add( p );
-          const q = new Quaternion;
-          q.setFromAxisAngle( axis, angle );
-          const quaternion = this.innerBox.quaternion.clone().multiply( q );
-              // currentCube.userData.hasRotation = { axis, angle, quaternion };
-          
-        } ),
-        startWith( [ undefined ] ),
-      ) ),
-      scan<any, any>( ( [ previousTime ] , [ currentTime ] ) =>
+      scan<any, any>( ( previousTime , currentTime ) =>
       {
+        // debugger;
         if ( currentTime.futureTime !== previousTime.futureTime )
         {
           this.cube.position.setZ( -2 );
@@ -104,7 +98,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           this.innerBox.updateMatrixWorld(true);
         }
         this.cube.translateZ( currentTime.delta * 2 / 3000 );
-        return [ currentTime, [ 'wtf', 'ok', 'no' ] ];
+        return currentTime;
       }, [{ futureTime: null }] )
     )
     .subscribe();
