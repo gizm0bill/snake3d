@@ -2,7 +2,7 @@ import { forwardRef, AfterViewInit, Directive, Input, Output } from '@angular/co
 import { AObject3D, vZero } from '../../three-js';
 import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color } from 'three';
 import { Observable, of } from 'rxjs';
-import { scan, withLatestFrom, startWith, switchAll } from 'rxjs/operators';
+import { scan, withLatestFrom, startWith, switchAll, combineLatest, switchMap, tap } from 'rxjs/operators';
 
 function createBoxWithRoundedEdges( width: number, height: number, depth: number, radius0: number, smoothness: number )
 {
@@ -77,20 +77,27 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
     this._object = this.outerBox;
 
-    this.direction$.pipe
-    (
-      scan( (prev, current) =>
-      {
-        return of( current, undefined );
-      }, undefined ),
-      switchAll()
-    ).subscribe( _ => { debugger; } );
+    // this.direction$.pipe
+    // (
+    //   scan( (prev, current) =>
+    //   {
+    //     return of( current, undefined );
+    //   }, undefined ),
+    //   switchAll()
+    // ).subscribe( _ => { debugger; } );
 
     this.loop$.pipe
     (
-      scan<any, any>( ( previousTime , currentTime ) =>
+      combineLatest(
+        this.direction$.pipe(
+          startWith( undefined ),
+          switchMap( current => { return of( current, undefined ); } ),
+          tap( _ => console.log( 'dir:', _ ) )
+        )
+      ),
+      scan<any, any>( ( [ previousTime ] , [ currentTime, direction ] ) =>
       {
-        // debugger;
+        console.log( '_ dir:', direction );
         if ( currentTime.futureTime !== previousTime.futureTime )
         {
           this.cube.position.setZ( -2 );
@@ -98,7 +105,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           this.innerBox.updateMatrixWorld(true);
         }
         this.cube.translateZ( currentTime.delta * 2 / 3000 );
-        return currentTime;
+        return [ currentTime ];
       }, [{ futureTime: null }] )
     )
     .subscribe();
