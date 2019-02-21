@@ -1,6 +1,6 @@
 import { forwardRef, AfterViewInit, Directive, Input, Output } from '@angular/core';
 import { AObject3D, vZero } from '../../three-js';
-import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color } from 'three';
+import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion } from 'three';
 import { Observable, of } from 'rxjs';
 import { scan, withLatestFrom, startWith, switchAll, combineLatest, switchMap, tap } from 'rxjs/operators';
 
@@ -88,24 +88,56 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
     this.loop$.pipe
     (
-      combineLatest(
-        this.direction$.pipe(
+      combineLatest
+      (
+        this.direction$.pipe
+        (
           startWith( undefined ),
-          switchMap( current => { return of( current, undefined ); } ),
+          switchMap( current => of( current, undefined ) ),
           tap( _ => console.log( 'dir:', _ ) )
         )
       ),
-      scan<any, any>( ( [ previousTime ] , [ currentTime, direction ] ) =>
+      scan<any, any>( ( [ previousTime, previousDirection, endDirection ] , [ currentTime, currentDirection ] ) =>
       {
-        console.log( '_ dir:', direction );
         if ( currentTime.futureTime !== previousTime.futureTime )
         {
-          this.cube.position.setZ( -2 );
+          if ( previousDirection ) // begin rotation
+          {
+            const [ axis, angle, pivot ] = previousDirection;
+            const p = pivot.clone(); // pivot
+            this.cube.position.sub( p );
+            p.applyQuaternion( this.innerBox.quaternion ).multiplyScalar( this.size / 2 );
+            this.innerBox.position.add( p );
+            const quaternion = this.innerBox.quaternion.clone().multiply( (new Quaternion).setFromAxisAngle( axis, angle ) );
+            previousDirection = undefined;
+            endDirection = [ axis, angle, pivot.clone(), quaternion ];
+          }
+          else if ( endDirection ) // end rotation
+          {
+            const [ _, __, pivot, quaternion ] = endDirection;
+            const p = pivot.clone();
+            p.applyQuaternion( this.innerBox.quaternion ).multiplyScalar( this.size / 2 );
+            this.innerBox.position.sub( p ) ;
+            this.cube.position.copy( vZero );
+            this.innerBox.quaternion.copy( quaternion );
+            endDirection = undefined;
+          }
+          else
+          {
+            this.cube.position.setZ( -2 );
+          }
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);
         }
+        if ( endDirection )
+        {
+          const [ axis, angle ] = endDirection;
+          this.innerBox.rotateOnAxis( axis, currentTime.delta / 3000 * angle );
+          // if ( idx === 0 ) this.camera.camera.up.copy( vY ).applyQuaternion( object.quaternion ).normalize();
+        }
         this.cube.translateZ( currentTime.delta * 2 / 3000 );
-        return [ currentTime ];
+
+        return [ currentTime, currentDirection || previousDirection, endDirection ];
       }, [{ futureTime: null }] )
     )
     .subscribe();

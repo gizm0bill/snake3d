@@ -35,7 +35,7 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
   // initial speed
   @Input() speed = 1000;
   // initial size
-  @Input() size = 2;
+  @Input() size = 1;
   // initial length
   @Input() length = 3;
 
