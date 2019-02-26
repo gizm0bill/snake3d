@@ -6,4 +6,5 @@ game-snake-segment( *ngFor=" let segment of segments; first as f ",
   [position]="segment",
   [size]="size",
   [loop$]="subLoop$",
-  [direction$]="direction$.asObservable()" )
+  [direction$]="direction$.asObservable()",
+  [renderer]="renderer" )

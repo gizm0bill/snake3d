@@ -2,7 +2,7 @@ import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
 import { Subject, timer, Observable, never, of, merge, BehaviorSubject, combineLatest } from 'rxjs';
 import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom, scan, share, delay } from 'rxjs/operators';
 import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments, Quaternion } from 'three';
-import { MeshDir, deg90, vY, vX, vZero } from '../three-js';
+import { MeshDir, deg90, vY, vX, vZero, deg85 } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir } from './snake/segment.dir';
@@ -13,7 +13,7 @@ dirs: IDir =
 {
   up: [ vX, -deg90, new Vector3( 0, 1, -1 )  ],
   down: [ vX, deg90, new Vector3( 0, -1, -1 ) ],
-  left: [ vY, deg90, new Vector3( 1, 0, -1 ) ],
+  left: [ vY, deg85, new Vector3( 1, 0, -1 ) ],
   right: [ vY, -deg90, new Vector3( -1, 0, -1 ) ],
 };
 
@@ -48,6 +48,8 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
   @Input() loop$: Observable<{ time: number, delta: number}>;
   @Output() loop$Change = new EventEmitter<Observable<any>>();
 
+  @Input() renderer: any;
+
   get lookAtPosition(){ return this.cubes.first.lookAt; }
 
   subLoop$: Observable<any>;
@@ -78,7 +80,7 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
         current.futureTime = previous.futureTime;
         if ( current.time > previous.futureTime  )
         {
-          this.cubes.forEach( cube => cube.object.translateZ( this.size ) );
+          // this.cubes.forEach( cube => cube.object.translateZ( this.size ) );
           const dt = current.time - current.futureTime;
           if ( dt > this.speed )
           {
@@ -99,7 +101,7 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
 
-    setTimeout( () => this.direction$.next( dirs.left ), 400 );
+    setTimeout( () => this.direction$.next( dirs.left ), 1000 );
   }
 
   ngOnChanges( changes: SimpleChanges )

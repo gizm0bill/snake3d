@@ -40,6 +40,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   @Input() position = vZero.clone();
   @Input() loop$: Observable<any>;
   @Input() direction$: Observable<any>;
+  @Input() renderer: any;
 
   private _lookAtPosition = new Vector3;
   @Output() get lookAt()
@@ -98,13 +99,24 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         {
           if ( previousDirection ) // begin rotation
           {
+            debugger;
             const [ axis, angle, pivot ] = previousDirection;
             const p = pivot.clone(); // pivot
-            this.cube.position.sub( p );
-            p.applyQuaternion( this.innerBox.quaternion ).multiplyScalar( this.size / 2 );
-            this.innerBox.position.add( p );
-            const quaternion = this.innerBox.quaternion.clone().multiply( (new Quaternion).setFromAxisAngle( axis, angle ) );
-            previousDirection = undefined;
+            this.outerBox.quaternion.copy( (new Quaternion).setFromAxisAngle( axis, angle ) );
+            // this.cube.position.sub( p );
+            // this.cube.position.setZ( -this.size / 2 );
+            // this.renderer.render();
+            // debugger;
+            // p.applyQuaternion( this.innerBox.quaternion ).multiplyScalar( this.size / 2 );
+            // this.innerBox.position.add( p );
+            // this.renderer.render();
+            // debugger;
+            // const quaternion = this.innerBox.quaternion.clone().multiply( (new Quaternion).setFromAxisAngle( axis, angle ) );
+            // previousDirection = undefined;
+            // this.outerBox.quaternion.copy( quaternion );
+            // this.outerBox.translateZ( this.size );
+            this.renderer.render();
+            debugger;
             endDirection = [ axis, angle, quaternion ];
           }
           else if ( endDirection ) // end rotation
@@ -113,8 +125,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
             this.innerBox.quaternion.copy( new Quaternion );
             this.innerBox.position.copy( vZero );
             this.cube.position.copy( vZero ).setZ( -this.size );
-            this.outerBox.quaternion.copy( quaternion );
-            this.outerBox.translateZ( this.size * 2  ); // todo: before
+            this.outerBox.translateZ( this.size  ); // todo: before
             endDirection = undefined;
           }
           else
@@ -123,14 +134,17 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           }
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);
+
+          this.outerBox.translateZ( this.size );
+
         }
         if ( endDirection )
         {
           const [ axis, angle ] = endDirection;
-          this.innerBox.rotateOnAxis( axis, delta / 3000 * angle );
+          this.innerBox.rotateOnAxis( axis, delta / 5000 * angle );
           // if ( idx === 0 ) this.camera.camera.up.copy( vY ).applyQuaternion( object.quaternion ).normalize();
         }
-        else this.cube.translateZ( delta * 2 / 3000 );
+        else this.cube.translateZ( delta * 2 / 5000 );
 
         return [ { futureTime, delta }, currentDirection || previousDirection, endDirection ];
       }, [{ futureTime: null }] )
