@@ -157,6 +157,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           }
           this.outerBox.translateZ( this.size );
           this.outerBox.updateMatrixWorld(true);
+          this.innerBox.updateMatrixWorld(true);
         }
         // continuos loop
         if ( !!endDirection )

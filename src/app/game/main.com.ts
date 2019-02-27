@@ -1,15 +1,13 @@
 import
 {
-  Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ViewChildren, QueryList, ChangeDetectorRef
+  Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ChangeDetectorRef
 } from '@angular/core';
-import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
+import { RendererCom, deg90, vY, vX, vZero } from '../three-js';
 import { Vector3, Spherical} from 'three';
-import { interval, animationFrameScheduler, Subject, timer, forkJoin, zip, range, of, merge, Observable, BehaviorSubject, from } from 'rxjs';
-import { map, scan, sampleTime, tap, withLatestFrom, startWith, filter, mergeMap, repeat, take, share } from 'rxjs/operators';
-import { MeshDir } from '../three-js/object';
+import { interval, animationFrameScheduler, Subject, zip, range, from } from 'rxjs';
+import { scan, tap, withLatestFrom, repeat, share } from 'rxjs/operators';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
-import { Snake1Com } from './snake.1.com';
 
 const dkd = 'document:keydown.';
 const dirs =
@@ -30,7 +28,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 {
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
-  @ViewChild(Snake1Com) snake: Snake1Com;
+  @ViewChild(SnakeCom) snake: SnakeCom;
 
   cubeSize = 2;
   snakeSegments = [];
