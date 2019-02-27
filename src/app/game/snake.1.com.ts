@@ -26,6 +26,7 @@ dirs: IDir =
 })
 export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChanges
 {
+  log( ...args: any[] ) { console.log(...args); }
   // @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
   @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
 
@@ -67,7 +68,7 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
       {
         this.positionChange.emit( this.cubes.first.object.position );
         // attach camera to head
-        if ( this.camera ) this.cubes.first.object.children[0].children[0].add( this.camera.camera );
+        if ( this.camera ) this.cubes.first.cube.add( this.camera.camera );
       }
     });
 
@@ -97,14 +98,14 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
       }, { futureTime: performance.now() } ),
       share(),
     );
-
+      console.log( this.speed );
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
 
     // setTimeout( () => this.direction$.next( DirectionCommand.LEFT ), 1000 );
-    setTimeout( () => this.direction$.next( DirectionCommand.LEFT ), 2000 );
+    setTimeout( () => this.direction$.next( DirectionCommand.UP ), 2000 );
     // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 7000 );
-    setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 8000 );
+    setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 8000 );
 
   }
 
