@@ -97,12 +97,14 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       {
         if ( futureTime !== prevFutureTime )
         {
+          console.log( previousDirection, endDirection );
           if ( previousDirection ) // begin rotation
           {
-            debugger;
             const [ axis, angle, pivot ] = previousDirection;
-            const p = pivot.clone(); // pivot
             this.outerBox.quaternion.copy( (new Quaternion).setFromAxisAngle( axis, angle ) );
+            const p = pivot.clone(); // pivot
+            this.innerBox.position.add( p.multiplyScalar( this.size / 2 ) );
+            this.cube.position.add( new Vector3( -1, 0, -1 ) );
             // this.cube.position.sub( p );
             // this.cube.position.setZ( -this.size / 2 );
             // this.renderer.render();
@@ -112,20 +114,16 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
             // this.renderer.render();
             // debugger;
             // const quaternion = this.innerBox.quaternion.clone().multiply( (new Quaternion).setFromAxisAngle( axis, angle ) );
-            // previousDirection = undefined;
             // this.outerBox.quaternion.copy( quaternion );
             // this.outerBox.translateZ( this.size );
-            this.renderer.render();
-            debugger;
-            endDirection = [ axis, angle, quaternion ];
+            endDirection = [ axis, angle, /*quaternion*/ ];
+            previousDirection = undefined;
           }
           else if ( endDirection ) // end rotation
           {
-            const [ _, __, quaternion ] = endDirection;
             this.innerBox.quaternion.copy( new Quaternion );
             this.innerBox.position.copy( vZero );
             this.cube.position.copy( vZero ).setZ( -this.size );
-            this.outerBox.translateZ( this.size  ); // todo: before
             endDirection = undefined;
           }
           else
@@ -136,6 +134,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           this.innerBox.updateMatrixWorld(true);
 
           this.outerBox.translateZ( this.size );
+          this.renderer.render();
 
         }
         if ( endDirection )

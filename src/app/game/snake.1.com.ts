@@ -2,7 +2,7 @@ import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
 import { Subject, timer, Observable, never, of, merge, BehaviorSubject, combineLatest } from 'rxjs';
 import { sampleTime, tap, startWith, filter, mergeMap, take, withLatestFrom, scan, share, delay } from 'rxjs/operators';
 import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegments, Quaternion } from 'three';
-import { MeshDir, deg90, vY, vX, vZero, deg85 } from '../three-js';
+import { MeshDir, deg90, vY, vX, vZero, deg81 } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir } from './snake/segment.dir';
@@ -13,7 +13,7 @@ dirs: IDir =
 {
   up: [ vX, -deg90, new Vector3( 0, 1, -1 )  ],
   down: [ vX, deg90, new Vector3( 0, -1, -1 ) ],
-  left: [ vY, deg85, new Vector3( 1, 0, -1 ) ],
+  left: [ vY, deg90, new Vector3( 1, 0, -1 ) ],
   right: [ vY, -deg90, new Vector3( -1, 0, -1 ) ],
 };
 
