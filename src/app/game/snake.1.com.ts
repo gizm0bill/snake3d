@@ -5,7 +5,7 @@ import { Vector3, Group, BoxBufferGeometry, Mesh, WireframeGeometry, LineSegment
 import { MeshDir, deg90, vY, vX, vZero, deg81 } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
-import { SnakeSegmentDir } from './snake/segment.dir';
+import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
 
 interface IDir { [key: string]: [ Vector3, number, Vector3 ]; }
 const dkd = 'document:keydown.',
@@ -101,29 +101,33 @@ export class Snake1Com extends AObject3D<Group> implements AfterViewInit, OnChan
     // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
     super.ngAfterViewInit();
 
-    setTimeout( () => this.direction$.next( dirs.left ), 1000 );
+    // setTimeout( () => this.direction$.next( DirectionCommand.LEFT ), 1000 );
+    setTimeout( () => this.direction$.next( DirectionCommand.LEFT ), 2000 );
+    // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 7000 );
+    setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 8000 );
+
   }
 
   ngOnChanges( changes: SimpleChanges )
   {
 
   }
-  direction$ = new Subject<any[]>();
+  direction$ = new Subject<DirectionCommand>();
 
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)
-  private arrowUp() { this.direction$.next( dirs.up ); }
+  private arrowUp() { this.direction$.next( DirectionCommand.UP ); }
 
   @HostListener(`${dkd}s`)
   @HostListener(`${dkd}arrowDown`)
-  private arrowDown() { this.direction$.next( dirs.down ); }
+  private arrowDown() { this.direction$.next( DirectionCommand.DOWN ); }
 
   @HostListener(`${dkd}a`)
   @HostListener(`${dkd}arrowLeft`)
-  private arrowLeft() { this.direction$.next( dirs.left ); }
+  private arrowLeft() { this.direction$.next( DirectionCommand.LEFT ); }
 
   @HostListener(`${dkd}d`)
   @HostListener(`${dkd}arrowRight`)
-  private arrowRight() { this.direction$.next( dirs.right ); }
+  private arrowRight() { this.direction$.next( DirectionCommand.RIGHT ); }
 
 }
