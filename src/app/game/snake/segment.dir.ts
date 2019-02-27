@@ -1,4 +1,4 @@
-import { forwardRef, AfterViewInit, Directive, Input, Output } from '@angular/core';
+import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter } from '@angular/core';
 import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from '../../three-js';
 import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion, ArrowHelper } from 'three';
 import { Observable, of } from 'rxjs';
@@ -56,6 +56,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   @Input() direction$: Observable<any>;
   @Input() renderer: any;
   @Input() dev = false;
+  @Output() rotation$ = new EventEmitter<Quaternion>();
 
   private _lookAtPosition = new Vector3;
   @Output() get lookAt()
@@ -153,6 +154,8 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
             this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
             this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
             endDirection = [ axis, angle ];
+            // TODO: lerp with cube?
+            this.rotation$.emit( this.outerBox.quaternion );
             startDirection = undefined;
           }
           this.outerBox.translateZ( this.size );
@@ -164,7 +167,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         {
           const [ axis, angle ] = endDirection;
           this.innerBox.rotateOnAxis( axis, delta / this.speed * angle );
-          // if ( idx === 0 ) this.camera.camera.up.copy( vY ).applyQuaternion( object.quaternion ).normalize();
         }
         else this.cube.translateZ( delta * 2 / this.speed );
         return [ { futureTime, delta }, currentDirection || startDirection, endDirection ];

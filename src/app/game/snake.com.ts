@@ -3,7 +3,7 @@ import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
 import { Subject, Observable, never } from 'rxjs';
 import { scan, share, delay, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
-import { vZero } from '../three-js';
+import { vZero, vY } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
@@ -106,6 +106,11 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   {
 
   }
+
+  updateCamera( quaternion ) {
+    this.camera.camera.up.copy( vY ).applyQuaternion( quaternion ).normalize();
+  }
+
   direction$ = new Subject<DirectionCommand>();
 
   @HostListener(`${dkd}w`)
