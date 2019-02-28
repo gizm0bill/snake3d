@@ -1,6 +1,4 @@
-//- three-mesh( *ngFor=" let segment of segments; first as f ", [position]="segment" )
-  three-box-buffer-geometry( [width]='size * .75', [height]='size * .75', [depth]='size * .75' )
-  three-mesh-lambert-material( [color]=" f ? '#FF0000' : '#0000FF' " )
+| {{log(segments)}}
 game-snake-segment( *ngFor=" let segment of segments; first as f; index as i ",
   [position]="segment",
   [speed]="speed",
@@ -8,4 +6,4 @@ game-snake-segment( *ngFor=" let segment of segments; first as f; index as i ",
   [loop$]="subLoop$",
   [direction$]="directionForSegment(i)",
   [renderer]="renderer",
-  (rotation$)="f ? updateCamera($event) : void(0)" )
+  (rotation$)="f ? updateCamera($event) : void()" )

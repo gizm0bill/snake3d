@@ -1,5 +1,5 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
-  forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
+  forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { Subject, Observable, never } from 'rxjs';
 import { scan, share, delay, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
@@ -11,13 +11,14 @@ import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
 const dkd = 'document:keydown.';
 @Component
 ({
-  selector: 'game-snake-1',
+  selector: 'game-snake',
   templateUrl: './snake.com.pug',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: AObject3D, useExisting: forwardRef( () => SnakeCom ) }]
 })
 export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChanges
 {
+  void() {}
   log( ...args: any[] ) { console.log(...args); }
   // @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
   @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
@@ -39,33 +40,15 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Output() behavior$Change = new EventEmitter<Observable<any>>();
 
   @Input() loop$: Observable<{ time: number, delta: number}>;
-  @Output() loop$Change = new EventEmitter<Observable<any>>();
 
   @Input() renderer: any;
 
-  get lookAtPosition(){ return this.cubes.first.lookAt; }
+  get lookAtPosition(){ return  this.cubes.first ? this.cubes.first.lookAt : vZero; }
 
+  constructor( private cdr: ChangeDetectorRef ) { super(); }
   subLoop$: Observable<any>;
   ngAfterViewInit()
   {
-    this.segments = Array( +this.length )
-      .fill( undefined )
-      .map( ( _, index ) => vZero.clone().sub( this.position.clone().add( new Vector3( 0, 0, +this.size * index ) ) ) );
-    this._object = new Group;
-
-    this.cubes.changes.subscribe( _ =>
-    {
-      this.object.add( ...this.cubes.map( ( { object } ) => object ) );
-      if ( this.cubes.first )
-      {
-        this.positionChange.emit( this.cubes.first.object.position );
-        // attach camera to head
-        if ( this.camera ) this.cubes.first.cube.add( this.camera.camera );
-      }
-    });
-
-    this.loop$Change.emit( this.loop$ );
-
     this.subLoop$ = this.loop$.pipe
     (
       scan<any, any>( (previous, current) =>
@@ -73,7 +56,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         current.futureTime = previous.futureTime;
         if ( current.time > previous.futureTime  )
         {
-          // this.cubes.forEach( cube => cube.object.translateZ( this.size ) );
           const dt = current.time - current.futureTime;
           if ( dt > this.speed )
           {
@@ -90,14 +72,27 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       }, { futureTime: performance.now() } ),
       share(),
     );
-      console.log( this.speed );
-    // setTimeout( () => { this.segments.push( new Vector3( 10, 10, 10 ) ); }, 1000 );
+    this.segments = Array( +this.length )
+      .fill( undefined )
+      .map( ( _, index ) => vZero.clone().sub( this.position.clone().add( new Vector3( 0, 0, +this.size * index ) ) ) );
+    this._object = new Group;
+    this.cubes.changes.subscribe( _ =>
+    {
+      this.object.add( ...this.cubes.map( ( { object } ) => object ) );
+      if ( this.cubes.first )
+      {
+        this.positionChange.emit( this.cubes.first.object.position );
+        // attach camera to head
+        if ( this.camera ) this.cubes.first.cube.add( this.camera.camera );
+      }
+    });
     super.ngAfterViewInit();
+    this.cdr.detectChanges();
 
-    // setTimeout( () => this.direction$.next( DirectionCommand.LEFT ), 1000 );
-    setTimeout( () => this.direction$.next( DirectionCommand.UP ), 2000 );
-    // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 7000 );
-    setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 8000 );
+    // setTimeout( () => this.direction$.next( DirectionCommand.LEFT ), 1500 );
+    // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 3000 );
+    // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
+    // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
   }
 
   directionForSegment( index: number ) { return this.direction$.pipe( delay( index * this.speed ) ); } // * .995?

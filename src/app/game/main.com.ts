@@ -1,13 +1,20 @@
 import
 {
-  Component, ViewChild, NgZone, OnDestroy, AfterViewInit, HostListener, ChangeDetectorRef
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  HostListener,
+  NgZone,
+  OnDestroy,
+  ViewChild,
 } from '@angular/core';
-import { RendererCom, deg90, vY, vX, vZero } from '../three-js';
-import { Vector3, Spherical} from 'three';
-import { interval, animationFrameScheduler, Subject, zip, range, from } from 'rxjs';
-import { scan, tap, withLatestFrom, repeat, share } from 'rxjs/operators';
+import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
+import { Vector3, Spherical } from 'three';
+import { interval, animationFrameScheduler, Subject, zip, range, from, BehaviorSubject, timer, empty } from 'rxjs';
+import { scan, tap, withLatestFrom, repeat, share, switchMap } from 'rxjs/operators';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
+import { AppleCom } from './apple.com';
 
 const dkd = 'document:keydown.';
 const dirs =
@@ -29,6 +36,8 @@ export class MainCom implements OnDestroy, AfterViewInit
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
   @ViewChild(SnakeCom) snake: SnakeCom;
+  @ViewChild(AppleCom) apple: AppleCom;
+
 
   cubeSize = 2;
   snakeSegments = [];
@@ -62,14 +71,12 @@ export class MainCom implements OnDestroy, AfterViewInit
   private arrowRight() { this.direction$.next( dirs.right ); }
 
   private direction$ = new Subject;
-  // private loop$ = interval( 10, animationFrameScheduler )
-  // .pipe
-  // (
-  //   map( _ => ({ time: Date.now(), deltaTime: null }) ),
-  //   scan( (previous, current) => ({ time: current.time, deltaTime: (current.time - previous.time) / 1000 }) )
-  // );
 
+  snakeLength = 3;
+  snakeSize = 2;
+  snakeSpeed = 5000;
   snakePosition = vZero.clone();
+  applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 5 ) );
 
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
 
@@ -89,7 +96,7 @@ export class MainCom implements OnDestroy, AfterViewInit
      theta: -( clientX / clientHeight ) * Math.PI * 2
     } );
     this.camera.camera.position.setFromSpherical( this.spherical );
-    this.camera.camera.lookAt( this.snake.lookAtPosition );
+    if ( this.snake ) this.camera.camera.lookAt( this.snake.lookAtPosition );
   }
 
   @HostListener( 'document:wheel', ['$event.deltaY'] )
@@ -100,11 +107,14 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.camera.camera.position.setFromSpherical( this.spherical );
   }
 
+
+  pauseResume$ = new BehaviorSubject<boolean>(false).pipe( scan( p => !p, false ) );
   ngOnDestroy()
   {
   }
-
-    private loop$ = interval( 10, animationFrameScheduler ).pipe
+  private newLoop()
+  {
+    return timer( 0, 10, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {
@@ -113,43 +123,16 @@ export class MainCom implements OnDestroy, AfterViewInit
       }, { time: performance.now(), delta: 0 } ),
       share()
     );
+  }
+  loop$ = this.pauseResume$.pipe( switchMap( resume => resume ? this.newLoop() : empty() ) );
 
-  snakeBehavior$ = from(this.loop$);
-
-  // private readonly _impulse$ = new BehaviorSubject<{ time: number, delta: number }>( undefined );
-  // impulse$ = this._impulse$.pipe( filter( t => !!t ), share() );
   ngAfterViewInit()
   {
-
     this.cdr.detectChanges();
-
-    const comps = [0, 1, 2];
-    this.loop$.pipe
+    return this.loop$.pipe
     (
-      // tap( time => this._impulse$.next(time) ),
-      withLatestFrom( this.snakeBehavior$ ),
-      tap( ([{ delta }, _]) =>
-      {
-        // this.spherical.theta += 0.005;
-        // this.camera.camera.lookAt( this.snake.lookAtPosition );
-        // this.camera.camera.position.setFromSpherical( this.spherical );
-
-        // this.snakePosition.add( vZ.clone().multiplyScalar( delta * this.cubeSize / 1000 ) );
-        // this.cubes.forEach( cube =>
-        // {
-        //   const cubeObj = cube.object;
-        //   cubeObj.translateZ( deltaTime * this.cubeSize );
-        //   // 'normalize' other axes
-        //   comps.forEach( compIdx =>
-        //   {
-        //     const comp = cubeObj.position.getComponent( compIdx );
-        //     if ( cubeObj.userData.lastPosition && comp === cubeObj.userData.lastPosition.getComponent( compIdx ) )
-        //       cubeObj.position.setComponent( compIdx, Math.round(comp) );
-        //   } );
-        //   cubeObj.userData.lastPosition = cube.object.position.clone();
-        // } );
-        this.zone.runOutsideAngular( () => this.childRenderer.render() );
-      })
-    ).subscribe();
+      // withLatestFrom( this.applePosition$ ),
+    )
+    .subscribe( _ => this.childRenderer.render() );
   }
 }

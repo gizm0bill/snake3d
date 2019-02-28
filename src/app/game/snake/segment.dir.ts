@@ -100,7 +100,8 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     this.innerBox = new Object3D;
     this.outerBox = new Object3D;
   }
-  public cube: Mesh;
+  subLoop$: any;
+  cube: Mesh;
   private innerBox: Object3D;
   private outerBox: Object3D;
   ngAfterViewInit()
@@ -117,7 +118,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     this.outerBox.add( this.innerBox );
     this._object = this.outerBox;
 
-    this.loop$.pipe
+    this.subLoop$ = this.loop$.pipe
     (
       combineLatest
       (
@@ -161,6 +162,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           this.outerBox.translateZ( this.size );
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);
+          this.cube.updateMatrixWorld(true);
         }
         // continuos loop
         if ( !!endDirection )

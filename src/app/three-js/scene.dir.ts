@@ -1,6 +1,7 @@
 import { Directive, AfterViewInit, forwardRef } from '@angular/core';
 import * as THREE from 'three';
 import { AObject3D } from './object-3d';
+import { SphereBufferGeometry, MeshBasicMaterial, Mesh } from 'three';
 
 @Directive
 ({

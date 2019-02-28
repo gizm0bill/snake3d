@@ -6,12 +6,14 @@ import { RoutingMod } from './routing.mod';
 import { BoxMaterialDir } from './box-material.dir';
 import { SnakeCom } from './snake.com';
 import { SnakeSegmentDir } from './snake';
+import { AppleCom } from './apple.com';
 
 @NgModule
 ({
   declarations:
   [
     MainCom,
+    AppleCom,
     SnakeCom,
     SnakeSegmentDir,
     BoxMaterialDir,
