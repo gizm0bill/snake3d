@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
-import { Subject, Observable, never } from 'rxjs';
-import { scan, share, delay, } from 'rxjs/operators';
+import { Subject, Observable, never, interval } from 'rxjs';
+import { scan, share, delay, filter, tap, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
 import { vZero, vY } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -90,13 +90,19 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     super.ngAfterViewInit();
     this.cdr.detectChanges();
 
-    // setTimeout( () => this.direction$.next( DirectionCommand.LEFT ), 1500 );
-    // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 3000 );
+    interval( this.speed ).pipe(
+      filter( i => {
+        if ( i % 7 === 0 || i % 8 === 0 ) return true;
+        return false;
+      } ),
+      tap( _ => this.direction$.next( DirectionCommand.LEFT ) )
+    ).subscribe();
+    // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 2000 );
     // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
     // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
   }
 
-  directionForSegment( index: number ) { return this.direction$.pipe( delay( index * this.speed ) ); } // * .995?
+  directionForSegment( index: number ) { return this.direction$.pipe( delay( index * this.speed ) ); }
 
   ngOnChanges( changes: SimpleChanges )
   {

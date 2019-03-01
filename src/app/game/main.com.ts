@@ -39,18 +39,12 @@ export class MainCom implements OnDestroy, AfterViewInit
   @ViewChild(AppleCom) apple: AppleCom;
 
 
-  cubeSize = 2;
-  snakeSegments = [];
   constructor
   (
     private readonly zone: NgZone,
     private readonly cdr: ChangeDetectorRef,
   )
   {
-    const start = new Vector3( 0, 0, 0 );
-    this.snakeSegments = Array( 3 )
-      .fill( undefined )
-      .map( ( _, index ) => start.clone().sub( new Vector3( 0, 0, this.cubeSize * index ) ) );
 
   }
 
@@ -72,9 +66,9 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   private direction$ = new Subject;
 
-  snakeLength = 3;
+  snakeLength = 5;
   snakeSize = 2;
-  snakeSpeed = 1000;
+  snakeSpeed = 750;
   snakePosition = vZero.clone();
   applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
@@ -132,11 +126,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     let newPos: Vector3;
     const newPosFn = () => Math.floor( Math.random() * ( this.gridSize + this.gridSize + 1 ) - this.gridSize ) * this.snakeSize;
     do { newPos = new Vector3( newPosFn(), newPosFn(), newPosFn() ); }
-    while ( (this.snakePosition as unknown as Vector3[]).find( pos =>
-      {
-        console.log( pos.round(), newPos, pos.round().equals( newPos ) );
-        return !!pos.round().equals( newPos );
-      } ) );
+    while ( (this.snakePosition as unknown as Vector3[]).find( pos => !!pos.round().equals( newPos ) ) );
     return newPos;
   }
   ngAfterViewInit()
@@ -149,7 +139,7 @@ export class MainCom implements OnDestroy, AfterViewInit
         if ( this.applePosition$.value.equals( this.snakePosition[0].round() ) )
           this.applePosition$.next( this.randomApplePosition() );
       } ),
-    ).subscribe( _ => this.childRenderer.render() );
+    ).subscribe( _ => this.zone.runOutsideAngular( _ => this.childRenderer.render() ) );
 
   }
 }

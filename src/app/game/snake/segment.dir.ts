@@ -57,7 +57,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   @Input() renderer: any;
   @Input() dev = false;
   @Output() rotation$ = new EventEmitter<Quaternion>();
-
+  @Input() index: number;
   private _lookAtPosition = new Vector3;
   @Output() get lookAt()
   {
@@ -126,7 +126,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         (
           startWith( undefined ),
           switchMap( current => of( current, undefined ) ),
-          tap( _ => console.log( 'dir:', _ ) )
         )
       ),
       scan<any, any>
@@ -150,6 +149,8 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           if ( !startDirection ) this.cube.position.setZ( -this.size );
           if ( startDirection ) // begin rotation
           {
+            console.log( `index: ${this.index}`, futureTime, prevFutureTime );
+
             const [ axis, angle, pivot, cubePos ] = DirectionSpecs[startDirection];
             this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
             this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
