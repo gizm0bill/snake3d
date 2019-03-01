@@ -10,8 +10,8 @@ import
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
 import { Vector3, Spherical } from 'three';
-import { interval, animationFrameScheduler, Subject, zip, range, from, BehaviorSubject, timer, empty } from 'rxjs';
-import { scan, tap, withLatestFrom, repeat, share, switchMap } from 'rxjs/operators';
+import { interval, animationFrameScheduler, Subject, zip, range, from, BehaviorSubject, timer, empty, of } from 'rxjs';
+import { scan, tap, withLatestFrom, repeat, share, switchMap, map } from 'rxjs/operators';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
@@ -74,9 +74,9 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 3;
   snakeSize = 2;
-  snakeSpeed = 5000;
+  snakeSpeed = 1000;
   snakePosition = vZero.clone();
-  applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 5 ) );
+  applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
 
@@ -114,7 +114,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
   private newLoop()
   {
-    return timer( 0, 10, animationFrameScheduler ).pipe
+    return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {
@@ -126,13 +126,30 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
   loop$ = this.pauseResume$.pipe( switchMap( resume => resume ? this.newLoop() : empty() ) );
 
+  gridSize = 5;
+  private randomApplePosition()
+  {
+    let newPos: Vector3;
+    const newPosFn = () => Math.floor( Math.random() * ( this.gridSize + this.gridSize + 1 ) - this.gridSize ) * this.snakeSize;
+    do { newPos = new Vector3( newPosFn(), newPosFn(), newPosFn() ); }
+    while ( (this.snakePosition as unknown as Vector3[]).find( pos =>
+      {
+        console.log( pos.round(), newPos, pos.round().equals( newPos ) );
+        return !!pos.round().equals( newPos );
+      } ) );
+    return newPos;
+  }
   ngAfterViewInit()
   {
     this.cdr.detectChanges();
     return this.loop$.pipe
     (
-      // withLatestFrom( this.applePosition$ ),
-    )
-    .subscribe( _ => this.childRenderer.render() );
+      tap( _ =>
+      {
+        if ( this.applePosition$.value.equals( this.snakePosition[0].round() ) )
+          this.applePosition$.next( this.randomApplePosition() );
+      } ),
+    ).subscribe( _ => this.childRenderer.render() );
+
   }
 }

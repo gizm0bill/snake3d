@@ -34,12 +34,13 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Input() length = 3;
 
   @Input() position = vZero.clone();
-  @Output() positionChange = new EventEmitter<Vector3>();
+  @Output() positionChange = new EventEmitter<Vector3[]>();
   segments: Array<Vector3>;
   @Input() behavior$: Observable<any> = never();
   @Output() behavior$Change = new EventEmitter<Observable<any>>();
 
   @Input() loop$: Observable<{ time: number, delta: number}>;
+  @Output() loop$Change = new EventEmitter<Observable<any>>();
 
   @Input() renderer: any;
 
@@ -67,11 +68,14 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             current.delta = current.time - current.futureTime;
             current.futureTime += this.speed - dt;
           }
+          this.positionChange.emit( this.cubes.toArray().map( segment => segment.object.position.round() ) );
         }
         return current;
       }, { futureTime: performance.now() } ),
       share(),
     );
+    this.loop$Change.emit( this.subLoop$ );
+
     this.segments = Array( +this.length )
       .fill( undefined )
       .map( ( _, index ) => vZero.clone().sub( this.position.clone().add( new Vector3( 0, 0, +this.size * index ) ) ) );
@@ -79,12 +83,9 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.cubes.changes.subscribe( _ =>
     {
       this.object.add( ...this.cubes.map( ( { object } ) => object ) );
-      if ( this.cubes.first )
-      {
-        this.positionChange.emit( this.cubes.first.object.position );
-        // attach camera to head
-        if ( this.camera ) this.cubes.first.cube.add( this.camera.camera );
-      }
+      if ( this.cubes.first && this.camera ) // camera -> head
+        this.cubes.first.cube.add( this.camera.camera );
+      this.positionChange.emit( this.cubes.toArray().map( segment => segment.object.position.round() ) );
     });
     super.ngAfterViewInit();
     this.cdr.detectChanges();

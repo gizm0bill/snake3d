@@ -140,6 +140,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         {
           if ( endDirection ) // end rotation
           {
+            this.outerBox.position.round();
             this.innerBox.quaternion.copy( quatZero );
             this.innerBox.position.copy( vZero );
             this.cube.quaternion.copy( quatZero );
