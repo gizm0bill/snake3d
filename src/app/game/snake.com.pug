@@ -3,7 +3,6 @@ game-snake-segment( *ngFor=" let segment of segments; first as f; index as i ",
   [speed]="speed",
   [size]="size",
   [loop$]="subLoop$",
-  [direction$]="directionForSegment(i)",
   [renderer]="renderer",
   (rotation$)="f ? updateCamera($event) : void()",
   [index]="i" )

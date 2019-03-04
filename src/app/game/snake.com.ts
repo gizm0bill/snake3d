@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
-import { Subject, Observable, never, interval } from 'rxjs';
-import { scan, share, delay, filter, tap, } from 'rxjs/operators';
+import { Subject, Observable, never, interval, of } from 'rxjs';
+import { scan, share, delay, filter, tap, withLatestFrom, startWith, switchMap, combineLatest, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
 import { vZero, vY } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -72,6 +72,10 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         }
         return current;
       }, { futureTime: performance.now() } ),
+      combineLatest
+      (
+        this.direction$.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) )
+      ),
       share(),
     );
     this.loop$Change.emit( this.subLoop$ );
@@ -90,19 +94,17 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     super.ngAfterViewInit();
     this.cdr.detectChanges();
 
-    interval( this.speed ).pipe(
-      filter( i => {
-        if ( i % 7 === 0 || i % 8 === 0 ) return true;
-        return false;
-      } ),
-      tap( _ => this.direction$.next( DirectionCommand.LEFT ) )
-    ).subscribe();
+    // interval( this.speed ).pipe(
+    //   filter( i => {
+    //     if ( i % 7 === 0 || i % 8 === 0 ) return true;
+    //     return false;
+    //   } ),
+    //   tap( _ => this.direction$.next( DirectionCommand.LEFT ) )
+    // ).subscribe();
     // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 2000 );
     // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
     // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
   }
-
-  directionForSegment( index: number ) { return this.direction$.pipe( delay( index * this.speed ) ); }
 
   ngOnChanges( changes: SimpleChanges )
   {

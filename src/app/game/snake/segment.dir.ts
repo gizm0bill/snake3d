@@ -1,8 +1,8 @@
 import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter } from '@angular/core';
 import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from '../../three-js';
-import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion, ArrowHelper } from 'three';
+import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion, ArrowHelper, MeshBasicMaterial } from 'three';
 import { Observable, of } from 'rxjs';
-import { scan, withLatestFrom, startWith, switchAll, combineLatest, switchMap, tap } from 'rxjs/operators';
+import { scan, withLatestFrom, startWith, switchAll, combineLatest, switchMap, tap, bufferWhen, exhaustMap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export enum DirectionCommand { UP = 1, DOWN = 2 , LEFT = 3, RIGHT = 4 }
@@ -95,6 +95,15 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       this.outerBox.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
       this.innerBox.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0xAA6600 ) );
       this.cube.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
+
+      if ( this.index < 5 ) for ( let i = 1; i <= this.index + 1; i++ )
+      {
+        const a = new BoxBufferGeometry( this.size / 10, this.size / 10, this.size / 10 );
+        const b = new Mesh( a, new MeshBasicMaterial({ color: 0x000000 }));
+        b.position.set( ( ( this.size / 2 ) - (i - 1) ) / 4, this.size / 2, 0 );
+        this.cube.add(b);
+      }
+
       return;
     }
     this.innerBox = new Object3D;
@@ -120,46 +129,56 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
     this.subLoop$ = this.loop$.pipe
     (
-      combineLatest
-      (
-        this.direction$.pipe
-        (
-          startWith( undefined ),
-          switchMap( current => of( current, undefined ) ),
-        )
-      ),
+      // combineLatest
+      // (
+      //   this.direction$.pipe
+      //   (
+      //     startWith( undefined ),
+      //     switchMap( current => of( current, undefined ) ),
+      //   )
+      // ),
       scan<any, any>
       ((
-        [ { futureTime: prevFutureTime }, startDirection, endDirection ],
+        [ { futureTime: prevFutureTime }, startDirection, exhaust, endDirection ],
         [ { futureTime, delta }, currentDirection ]
       ) =>
       {
+        if ( currentDirection )
+        {
+          exhaust = [ this.index, ...( exhaust || [] ) ];
+          startDirection = [ currentDirection, ...( startDirection || [] ) ];
+        }
         // key frame
         if ( futureTime !== prevFutureTime )
         {
-          if ( endDirection ) // end rotation
+          if ( !!endDirection.length ) // end rotation
           {
             this.outerBox.position.round();
             this.innerBox.quaternion.copy( quatZero );
             this.innerBox.position.copy( vZero );
             this.cube.quaternion.copy( quatZero );
             this.cube.position.copy( vZero ).setZ( -this.size );
-            endDirection = undefined;
+            exhaust = exhaust.filter( e => e >= 0 );
+            endDirection.pop();
           }
-          if ( !startDirection ) this.cube.position.setZ( -this.size );
-          if ( startDirection ) // begin rotation
+          if ( !startDirection.length || !exhaust.length || exhaust.find( e => e > 0 ) ) this.cube.position.setZ( -this.size );
+          if ( !!startDirection.length ) // begin rotation
           {
-            console.log( `index: ${this.index}`, futureTime, prevFutureTime );
-
-            const [ axis, angle, pivot, cubePos ] = DirectionSpecs[startDirection];
-            this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
-            this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
-            this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
-            this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
-            endDirection = [ axis, angle ];
-            // TODO: lerp with cube?
-            this.rotation$.emit( this.outerBox.quaternion );
-            startDirection = undefined;
+            const anyExhausted = exhaust.findIndex( e => e === 0 );
+            // tslint:disable:no-bitwise
+            console.log( this.index, !!~anyExhausted, exhaust );
+            if ( !!~anyExhausted )
+            {
+              const [ axis, angle, pivot, cubePos ] = DirectionSpecs[ startDirection.pop() ];
+              this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
+              this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
+              this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
+              this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
+              endDirection = [ [ axis, angle ], ...( endDirection || [] ) ];
+              // TODO: lerp with cube?
+              this.rotation$.emit( this.outerBox.quaternion );
+            }
+            exhaust = exhaust.map( e => e - 1 );
           }
           this.outerBox.translateZ( this.size );
           this.outerBox.updateMatrixWorld(true);
@@ -167,14 +186,14 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           this.cube.updateMatrixWorld(true);
         }
         // continuos loop
-        if ( !!endDirection )
+        if ( !!endDirection.length )
         {
-          const [ axis, angle ] = endDirection;
+          const [ axis, angle ] = endDirection[ endDirection.length - 1 ];
           this.innerBox.rotateOnAxis( axis, delta / this.speed * angle );
         }
         else this.cube.translateZ( delta * 2 / this.speed );
-        return [ { futureTime, delta }, currentDirection || startDirection, endDirection ];
-      }, [{ futureTime: null }] )
+        return [ { futureTime, delta }, startDirection, exhaust, endDirection ];
+      }, [{ futureTime: null }, [], [], []] )
     )
     .subscribe();
 

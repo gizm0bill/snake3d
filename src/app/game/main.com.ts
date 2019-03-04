@@ -68,7 +68,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 5;
   snakeSize = 2;
-  snakeSpeed = 750;
+  snakeSpeed = 1000;
   snakePosition = vZero.clone();
   applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
