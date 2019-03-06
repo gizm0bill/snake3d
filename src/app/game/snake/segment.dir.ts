@@ -72,7 +72,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
       const wireGeom = new WireframeGeometry( wireBoxGeom );
       this.innerBox = new LineSegments( wireGeom );
-      this.innerBox.scale.copy( new Vector3( .9375, .9375, .9375 ) );
+      // this.innerBox.scale.copy( new Vector3( .9375, .9375, .9375 ) );
       Object.assign( (this.innerBox as LineSegments).material,
       {
         depthTest: false,
@@ -95,15 +95,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       this.outerBox.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
       this.innerBox.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0xAA6600 ) );
       this.cube.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
-
-      if ( this.index < 5 ) for ( let i = 1; i <= this.index + 1; i++ )
-      {
-        const a = new BoxBufferGeometry( this.size / 10, this.size / 10, this.size / 10 );
-        const b = new Mesh( a, new MeshBasicMaterial({ color: 0x000000 }));
-        b.position.set( ( ( this.size / 2 ) - (i - 1) ) / 4, this.size / 2, 0 );
-        this.cube.add(b);
-      }
-
       return;
     }
     this.innerBox = new Object3D;
@@ -191,7 +182,12 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           const [ axis, angle ] = endDirection[ endDirection.length - 1 ];
           this.innerBox.rotateOnAxis( axis, delta / this.speed * angle );
         }
-        else this.cube.translateZ( delta * 2 / this.speed );
+        else
+        {
+          this.cube.translateZ( delta * this.size / this.speed );
+          // if ( this.index === 0 )
+          //   console.log( futureTime !== prevFutureTime ? '.' : '', delta, this.cube.position.z );
+        }
         return [ { futureTime, delta }, startDirection, exhaust, endDirection ];
       }, [{ futureTime: null }, [], [], []] )
     )

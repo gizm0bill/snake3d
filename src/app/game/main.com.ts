@@ -68,7 +68,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 5;
   snakeSize = 2;
-  snakeSpeed = 1000;
+  snakeSpeed = 7500;
   snakePosition = vZero.clone();
   applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
@@ -108,7 +108,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
   private newLoop()
   {
-    return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
+    return timer( 0, 1000 / 6, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {

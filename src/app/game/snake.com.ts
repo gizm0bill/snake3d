@@ -1,12 +1,32 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
-import { Subject, Observable, never, interval, of } from 'rxjs';
-import { scan, share, delay, filter, tap, withLatestFrom, startWith, switchMap, combineLatest, } from 'rxjs/operators';
+import { Subject, Observable, never, interval, of, defer } from 'rxjs';
+import { scan, share, delay, filter, tap, withLatestFrom, startWith, switchMap, combineLatest, map, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
 import { vZero, vY } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
+
+// const stateful = () =>
+// {
+//   return source => defer(() =>
+//   {
+//     let state = Math.random().toString();
+//     return source.pipe
+//     (
+//       map( next => {
+//         state = state + '--' + next;
+//         return state
+//       }),
+//       // tap( ...do something with state ),
+//       // switchMap( ...do something with state),
+//       // filter( ...do something with state )
+//     )
+
+//   })
+// }
+
 
 const dkd = 'document:keydown.';
 @Component
@@ -71,7 +91,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           this.positionChange.emit( this.cubes.toArray().map( segment => segment.object.position.round() ) );
         }
         return current;
-      }, { futureTime: performance.now() } ),
+      }, { futureTime: performance.now() + this.speed } ),
       combineLatest
       (
         this.direction$.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) )
