@@ -68,7 +68,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 5;
   snakeSize = 2;
-  snakeSpeed = 7500;
+  snakeSpeed = 3000;
   snakePosition = vZero.clone();
   applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
@@ -139,7 +139,7 @@ export class MainCom implements OnDestroy, AfterViewInit
         if ( this.applePosition$.value.equals( this.snakePosition[0].round() ) )
           this.applePosition$.next( this.randomApplePosition() );
       } ),
-    ).subscribe( _ => this.zone.runOutsideAngular( _ => this.childRenderer.render() ) );
+    ).subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) );
 
   }
 }

@@ -72,7 +72,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
       const wireGeom = new WireframeGeometry( wireBoxGeom );
       this.innerBox = new LineSegments( wireGeom );
-      // this.innerBox.scale.copy( new Vector3( .9375, .9375, .9375 ) );
+      this.innerBox.scale.copy( new Vector3( .9375, .9375, .9375 ) );
       Object.assign( (this.innerBox as LineSegments).material,
       {
         depthTest: false,
@@ -120,14 +120,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
     this.subLoop$ = this.loop$.pipe
     (
-      // combineLatest
-      // (
-      //   this.direction$.pipe
-      //   (
-      //     startWith( undefined ),
-      //     switchMap( current => of( current, undefined ) ),
-      //   )
-      // ),
       scan<any, any>
       ((
         [ { futureTime: prevFutureTime }, startDirection, exhaust, endDirection ],
@@ -157,7 +149,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           {
             const anyExhausted = exhaust.findIndex( e => e === 0 );
             // tslint:disable:no-bitwise
-            console.log( this.index, !!~anyExhausted, exhaust );
             if ( !!~anyExhausted )
             {
               const [ axis, angle, pivot, cubePos ] = DirectionSpecs[ startDirection.pop() ];

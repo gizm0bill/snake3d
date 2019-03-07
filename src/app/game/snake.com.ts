@@ -1,31 +1,58 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
-import { Subject, Observable, never, interval, of, defer } from 'rxjs';
-import { scan, share, delay, filter, tap, withLatestFrom, startWith, switchMap, combineLatest, map, } from 'rxjs/operators';
+import { Subject, Observable, never, interval, of, defer, animationFrameScheduler } from 'rxjs';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
 import { vZero, vY } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
+import { AnonymousSubject } from 'rxjs/internal/Subject';
 
-// const stateful = () =>
-// {
-//   return source => defer(() =>
-//   {
-//     let state = Math.random().toString();
-//     return source.pipe
-//     (
-//       map( next => {
-//         state = state + '--' + next;
-//         return state
-//       }),
-//       // tap( ...do something with state ),
-//       // switchMap( ...do something with state),
-//       // filter( ...do something with state )
-//     )
+const stateful = () =>
+{
+  return source => defer(() =>
+  {
+    let state = Math.random().toString();
+    return source.pipe
+    (
+      map( next => {
+        state = state + '--' + next;
+        return state;
+      }),
+      // tap( ...do something with state ),
+      // switchMap( ...do something with state),
+      // filter( ...do something with state )
+    )
 
-//   })
-// }
+  });
+};
+
+const snakeDelay = ( keyFrames: number ) => (source: AnonymousSubject<any>) => defer( () =>
+{
+  const dirs = [];
+  let dirExhausts = [];
+  return source.pipe
+  (
+    // map( _ => { debugger; return _; } ),
+    scan<any, any>
+    ((
+      [ { futureTime: prevFutureTime } ],
+      [ { futureTime, delta }, currentDirection ]
+    ) =>
+    {
+      if ( !!currentDirection )
+      {
+        dirs.push( currentDirection );
+        dirExhausts.push( keyFrames );
+      }
+      let retDirection: DirectionCommand;
+      if ( prevFutureTime !== futureTime )
+        dirExhausts = dirExhausts.reduceRight( (acc, val) => ( --val !== 0 ? [val] : ( retDirection = dirs.pop(), [] ) ).concat(acc), [] );
+      return [ { futureTime, delta }, retDirection ];
+    } )
+  );
+});
 
 
 const dkd = 'document:keydown.';
@@ -98,6 +125,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       ),
       share(),
     );
+    this.subLoop$.pipe( snakeDelay( 3 ) ).subscribe( console.log );
+
     this.loop$Change.emit( this.subLoop$ );
 
     this.segments = Array( +this.length )
@@ -121,7 +150,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     //   } ),
     //   tap( _ => this.direction$.next( DirectionCommand.LEFT ) )
     // ).subscribe();
-    // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 2000 );
+
+    setTimeout( () => this.direction$.next( DirectionCommand.UP ), 100 );
     // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
     // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
   }
