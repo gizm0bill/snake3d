@@ -5,7 +5,7 @@ import { AObject3D, SphereBufferGeometryDir, MeshDir, MeshPhongMaterialDir } fro
 ({
   selector: 'game-apple',
   template: `
-    <three-sphere-buffer-geometry></three-sphere-buffer-geometry>
+    <three-sphere-buffer-geometry radius='.75'></three-sphere-buffer-geometry>
     <three-mesh-phong-material></three-mesh-phong-material>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

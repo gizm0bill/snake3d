@@ -9,25 +9,6 @@ import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
 import { AnonymousSubject } from 'rxjs/internal/Subject';
 
-const stateful = () =>
-{
-  return source => defer(() =>
-  {
-    let state = Math.random().toString();
-    return source.pipe
-    (
-      map( next => {
-        state = state + '--' + next;
-        return state;
-      }),
-      // tap( ...do something with state ),
-      // switchMap( ...do something with state),
-      // filter( ...do something with state )
-    )
-
-  });
-};
-
 const snakeDelay = ( keyFrames: number ) => (source: AnonymousSubject<any>) => defer( () =>
 {
   const dirs = [];
@@ -48,7 +29,7 @@ const snakeDelay = ( keyFrames: number ) => (source: AnonymousSubject<any>) => d
       }
       let retDirection: DirectionCommand;
       if ( prevFutureTime !== futureTime )
-        dirExhausts = dirExhausts.reduceRight( (acc, val) => ( --val !== 0 ? [val] : ( retDirection = dirs.pop(), [] ) ).concat(acc), [] );
+        dirExhausts = dirExhausts.reduceRight( (acc, val) => ( --val >= 0 ? [val] : ( retDirection = dirs.shift(), [] ) ).concat(acc), [] );
       return [ { futureTime, delta }, retDirection ];
     } )
   );
@@ -125,7 +106,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       ),
       share(),
     );
-    this.subLoop$.pipe( snakeDelay( 3 ) ).subscribe( console.log );
 
     this.loop$Change.emit( this.subLoop$ );
 
@@ -151,7 +131,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     //   tap( _ => this.direction$.next( DirectionCommand.LEFT ) )
     // ).subscribe();
 
-    setTimeout( () => this.direction$.next( DirectionCommand.UP ), 100 );
+    // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 100 );
     // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
     // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
   }
@@ -164,6 +144,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   updateCamera( quaternion ) {
     this.camera.camera.up.copy( vY ).applyQuaternion( quaternion ).normalize();
   }
+
+  loop4Segment( index: number ) { return this.subLoop$.pipe( snakeDelay( index ) ); }
 
   direction$ = new Subject<DirectionCommand>();
 

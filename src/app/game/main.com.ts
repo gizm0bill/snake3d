@@ -11,7 +11,7 @@ import
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
 import { Vector3, Spherical } from 'three';
 import { interval, animationFrameScheduler, Subject, zip, range, from, BehaviorSubject, timer, empty, of } from 'rxjs';
-import { scan, tap, withLatestFrom, repeat, share, switchMap, map } from 'rxjs/operators';
+import { scan, tap, withLatestFrom, repeat, share, switchMap, map, delay } from 'rxjs/operators';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
@@ -70,8 +70,8 @@ export class MainCom implements OnDestroy, AfterViewInit
   snakeSize = 2;
   snakeSpeed = 3000;
   snakePosition = vZero.clone();
-  applePosition$ = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
-
+  private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
+  applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed, animationFrameScheduler ) );
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
 
   @HostListener( 'window:resize', ['$event'] )
@@ -108,7 +108,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
   private newLoop()
   {
-    return timer( 0, 1000 / 6, animationFrameScheduler ).pipe
+    return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {
@@ -136,8 +136,8 @@ export class MainCom implements OnDestroy, AfterViewInit
     (
       tap( _ =>
       {
-        if ( this.applePosition$.value.equals( this.snakePosition[0].round() ) )
-          this.applePosition$.next( this.randomApplePosition() );
+        if ( this.applePosition.value.equals( this.snakePosition[0].round() ) )
+          this.applePosition.next( this.randomApplePosition() );
       } ),
     ).subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) );
 

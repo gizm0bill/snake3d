@@ -122,65 +122,47 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     (
       scan<any, any>
       ((
-        [ { futureTime: prevFutureTime }, startDirection, exhaust, endDirection ],
+        [ { futureTime: prevFutureTime }, endDirection ],
         [ { futureTime, delta }, currentDirection ]
       ) =>
       {
-        if ( currentDirection )
-        {
-          exhaust = [ this.index, ...( exhaust || [] ) ];
-          startDirection = [ currentDirection, ...( startDirection || [] ) ];
-        }
-        // key frame
         if ( futureTime !== prevFutureTime )
         {
-          if ( !!endDirection.length ) // end rotation
+          if ( endDirection ) // end rotation
           {
             this.outerBox.position.round();
             this.innerBox.quaternion.copy( quatZero );
             this.innerBox.position.copy( vZero );
             this.cube.quaternion.copy( quatZero );
             this.cube.position.copy( vZero ).setZ( -this.size );
-            exhaust = exhaust.filter( e => e >= 0 );
-            endDirection.pop();
+            endDirection = undefined;
           }
-          if ( !startDirection.length || !exhaust.length || exhaust.find( e => e > 0 ) ) this.cube.position.setZ( -this.size );
-          if ( !!startDirection.length ) // begin rotation
+          else this.cube.position.setZ( -this.size );
+          if ( !!currentDirection )
           {
-            const anyExhausted = exhaust.findIndex( e => e === 0 );
-            // tslint:disable:no-bitwise
-            if ( !!~anyExhausted )
-            {
-              const [ axis, angle, pivot, cubePos ] = DirectionSpecs[ startDirection.pop() ];
-              this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
-              this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
-              this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
-              this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
-              endDirection = [ [ axis, angle ], ...( endDirection || [] ) ];
-              // TODO: lerp with cube?
-              this.rotation$.emit( this.outerBox.quaternion );
-            }
-            exhaust = exhaust.map( e => e - 1 );
+            const [ axis, angle, pivot, cubePos ] = DirectionSpecs[currentDirection];
+            this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
+            this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
+            this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
+            this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
+            endDirection = [ axis, angle ];
+            // TODO: lerp with cube?
+            this.rotation$.emit( this.outerBox.quaternion );
+            // startDirection = undefined;
           }
           this.outerBox.translateZ( this.size );
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);
           this.cube.updateMatrixWorld(true);
         }
-        // continuos loop
-        if ( !!endDirection.length )
+        if ( !!endDirection )
         {
-          const [ axis, angle ] = endDirection[ endDirection.length - 1 ];
+          const [ axis, angle ] = endDirection;
           this.innerBox.rotateOnAxis( axis, delta / this.speed * angle );
         }
-        else
-        {
-          this.cube.translateZ( delta * this.size / this.speed );
-          // if ( this.index === 0 )
-          //   console.log( futureTime !== prevFutureTime ? '.' : '', delta, this.cube.position.z );
-        }
-        return [ { futureTime, delta }, startDirection, exhaust, endDirection ];
-      }, [{ futureTime: null }, [], [], []] )
+        else this.cube.translateZ( delta * this.size / this.speed );
+        return [ { futureTime, delta }, endDirection ];
+      }, [{ futureTime: null }] )
     )
     .subscribe();
 
