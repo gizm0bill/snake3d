@@ -68,7 +68,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 5;
   snakeSize = 2;
-  snakeSpeed = 3000;
+  snakeSpeed = 2000;
   snakePosition = vZero.clone();
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed, animationFrameScheduler ) );
@@ -129,15 +129,21 @@ export class MainCom implements OnDestroy, AfterViewInit
     while ( (this.snakePosition as unknown as Vector3[]).find( pos => !!pos.round().equals( newPos ) ) );
     return newPos;
   }
+  eatenApples = [];
   ngAfterViewInit()
   {
     this.cdr.detectChanges();
+
     return this.loop$.pipe
     (
       tap( _ =>
       {
         if ( this.applePosition.value.equals( this.snakePosition[0].round() ) )
-          this.applePosition.next( this.randomApplePosition() );
+        {
+          // this.applePosition.next( this.randomApplePosition() );
+          this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 2 ) ) );
+          this.eatenApples.push( this.snakePosition[0].clone() );
+        }
       } ),
     ).subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) );
 

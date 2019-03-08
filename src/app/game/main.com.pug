@@ -4,9 +4,9 @@
 three-renderer( #mainRenderer )
 
   three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=5 positionY=5, positionZ=-10, #gameCamera='threePerspectiveCamera' )
-  
+
   three-scene
-    
+
     three-axes-helper( size=5 )
     three-grid-helper( size=128, divisions=64 )
 
@@ -17,7 +17,7 @@ three-renderer( #mainRenderer )
     three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
 
     game-snake( [speed]='snakeSpeed', [length]='snakeLength', [size]='snakeSize', [renderer]='childRenderer',
-      [(position)]='snakePosition', [camera]='gameCamera', [(loop$)]='loop$' )
+      [(position)]='snakePosition', [eatenApples]='eatenApples', [camera]='gameCamera', [(loop$)]='loop$' )
     game-apple( [position]='applePosition$|async' )
 
-      
+

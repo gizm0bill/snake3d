@@ -1,4 +1,4 @@
-game-snake-segment( *ngFor=" let segment of segments; first as f; index as i ",
+game-snake-segment( *ngFor=" let segment of segments; first as f; index as i; trackBy: trackByFn ",
   [position]="segment",
   [speed]="speed",
   [size]="size",
@@ -6,3 +6,4 @@ game-snake-segment( *ngFor=" let segment of segments; first as f; index as i ",
   [renderer]="renderer",
   (rotation$)="f ? updateCamera($event) : void()",
   [index]="i" )
+  | {{log(segment)}}

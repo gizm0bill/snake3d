@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
-import { Subject, Observable, never, interval, of, defer, animationFrameScheduler } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, } from 'rxjs/operators';
+import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer } from 'rxjs';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
 import { vZero, vY } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -47,7 +47,7 @@ const dkd = 'document:keydown.';
 export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChanges
 {
   void() {}
-  log( ...args: any[] ) { console.log(...args); }
+  log( ...args: any[] ) { console.log('…snake…', ...args); }
   // @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
   @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
 
@@ -70,11 +70,18 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Input() loop$: Observable<{ time: number, delta: number}>;
   @Output() loop$Change = new EventEmitter<Observable<any>>();
 
+  @Input() eatenApples: Vector3[] = [];
   @Input() renderer: any;
 
   get lookAtPosition(){ return  this.cubes.first ? this.cubes.first.lookAt : vZero; }
 
-  constructor( private cdr: ChangeDetectorRef ) { super(); }
+  trackByFn( index: number, vector: Vector3 )
+  {
+    return `${index}:${vector.toArray().join()}`;
+  }
+  constructor( private cdr: ChangeDetectorRef ) {
+    super();
+  }
   subLoop$: Observable<any>;
   ngAfterViewInit()
   {
@@ -95,6 +102,14 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           {
             current.delta = current.time - current.futureTime;
             current.futureTime += this.speed - dt;
+          }
+          if ( this.eatenApples[0] && this.cubes.last.object.position.equals( this.eatenApples[0] ) )
+          {
+            timer( this.speed, animationFrameScheduler ).pipe( tap( _ =>
+            {
+              this.segments.push(this.eatenApples.shift());
+              this.cdr.detectChanges();
+            } ) ).subscribe();
           }
           this.positionChange.emit( this.cubes.toArray().map( segment => segment.object.position.round() ) );
         }
@@ -122,6 +137,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     });
     super.ngAfterViewInit();
     this.cdr.detectChanges();
+    this.cdr.detach();
 
     // interval( this.speed ).pipe(
     //   filter( i => {
@@ -138,6 +154,9 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   ngOnChanges( changes: SimpleChanges )
   {
+    if ( changes.length && changes.length.currentValue > changes.length.previousValue )
+    {
+    }
 
   }
 

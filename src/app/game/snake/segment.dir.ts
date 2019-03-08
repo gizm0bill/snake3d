@@ -1,4 +1,4 @@
-import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter } from '@angular/core';
+import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter, NgZone } from '@angular/core';
 import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from '../../three-js';
 import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion, ArrowHelper, MeshBasicMaterial } from 'three';
 import { Observable, of } from 'rxjs';
@@ -49,6 +49,9 @@ function createBoxWithRoundedEdges( width: number, height: number, depth: number
 })
 export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewInit
 {
+  constructor( private zone: NgZone ) {
+    super();
+  }
   @Input() size = 1;
   @Input() position = vZero.clone();
   @Input() speed = 3000;
@@ -106,65 +109,68 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   private outerBox: Object3D;
   ngAfterViewInit()
   {
-    this.cube = new Mesh
-    (
-      createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 ),
-      new MeshPhongMaterial( { color: 0x2194CE } )
-    );
-    this.cube.scale.copy( new Vector3( .75, .75, .75 ) );
-    this.cube.position.setZ( -this.size );
-    this.setupHelpers();
-    this.innerBox.add( this.cube );
-    this.outerBox.add( this.innerBox );
-    this._object = this.outerBox;
+    this.zone.runOutsideAngular( () =>
+    {
+      this.cube = new Mesh
+      (
+        createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 ),
+        new MeshPhongMaterial( { color: 0x2194CE } )
+      );
+      this.cube.scale.copy( new Vector3( .75, .75, .75 ) );
+      this.cube.position.setZ( -this.size );
+      this.setupHelpers();
+      this.innerBox.add( this.cube );
+      this.outerBox.add( this.innerBox );
+      this._object = this.outerBox;
 
-    this.subLoop$ = this.loop$.pipe
-    (
-      scan<any, any>
-      ((
-        [ { futureTime: prevFutureTime }, endDirection ],
-        [ { futureTime, delta }, currentDirection ]
-      ) =>
-      {
-        if ( futureTime !== prevFutureTime )
+      this.subLoop$ = this.loop$.pipe
+      (
+        scan<any, any>
+        ((
+          [ { futureTime: prevFutureTime }, endDirection ],
+          [ { futureTime, delta }, currentDirection ]
+        ) =>
         {
-          if ( endDirection ) // end rotation
+          if ( futureTime !== prevFutureTime )
           {
-            this.outerBox.position.round();
-            this.innerBox.quaternion.copy( quatZero );
-            this.innerBox.position.copy( vZero );
-            this.cube.quaternion.copy( quatZero );
-            this.cube.position.copy( vZero ).setZ( -this.size );
-            endDirection = undefined;
+            if ( endDirection ) // end rotation
+            {
+              this.outerBox.position.round();
+              this.innerBox.quaternion.copy( quatZero );
+              this.innerBox.position.copy( vZero );
+              this.cube.quaternion.copy( quatZero );
+              this.cube.position.copy( vZero ).setZ( -this.size );
+              endDirection = undefined;
+            }
+            else this.cube.position.setZ( -this.size );
+            if ( !!currentDirection )
+            {
+              const [ axis, angle, pivot, cubePos ] = DirectionSpecs[currentDirection];
+              this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
+              this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
+              this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
+              this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
+              endDirection = [ axis, angle ];
+              // TODO: lerp with cube?
+              this.rotation$.emit( this.outerBox.quaternion );
+              // startDirection = undefined;
+            }
+            this.outerBox.translateZ( this.size );
+            this.outerBox.updateMatrixWorld(true);
+            this.innerBox.updateMatrixWorld(true);
+            this.cube.updateMatrixWorld(true);
           }
-          else this.cube.position.setZ( -this.size );
-          if ( !!currentDirection )
+          if ( !!endDirection )
           {
-            const [ axis, angle, pivot, cubePos ] = DirectionSpecs[currentDirection];
-            this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
-            this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
-            this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
-            this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
-            endDirection = [ axis, angle ];
-            // TODO: lerp with cube?
-            this.rotation$.emit( this.outerBox.quaternion );
-            // startDirection = undefined;
+            const [ axis, angle ] = endDirection;
+            this.innerBox.rotateOnAxis( axis, delta / this.speed * angle );
           }
-          this.outerBox.translateZ( this.size );
-          this.outerBox.updateMatrixWorld(true);
-          this.innerBox.updateMatrixWorld(true);
-          this.cube.updateMatrixWorld(true);
-        }
-        if ( !!endDirection )
-        {
-          const [ axis, angle ] = endDirection;
-          this.innerBox.rotateOnAxis( axis, delta / this.speed * angle );
-        }
-        else this.cube.translateZ( delta * this.size / this.speed );
-        return [ { futureTime, delta }, endDirection ];
-      }, [{ futureTime: null }] )
-    )
-    .subscribe();
+          else this.cube.translateZ( delta * this.size / this.speed );
+          return [ { futureTime, delta }, endDirection ];
+        }, [{ futureTime: null }] )
+      )
+      .subscribe();
+    });
 
     super.ngAfterViewInit();
   }
