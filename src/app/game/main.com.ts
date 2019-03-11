@@ -10,8 +10,8 @@ import
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
 import { Vector3, Spherical } from 'three';
-import { interval, animationFrameScheduler, Subject, zip, range, from, BehaviorSubject, timer, empty, of } from 'rxjs';
-import { scan, tap, withLatestFrom, repeat, share, switchMap, map, delay } from 'rxjs/operators';
+import { interval, animationFrameScheduler, Subject, zip, range, from, BehaviorSubject, timer, empty, of, Observable } from 'rxjs';
+import { scan, tap, withLatestFrom, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
@@ -71,7 +71,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   snakeSpeed = 2000;
   snakePosition = vZero.clone();
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
-  applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed, animationFrameScheduler ) );
+  applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
 
   @HostListener( 'window:resize', ['$event'] )
@@ -130,22 +130,26 @@ export class MainCom implements OnDestroy, AfterViewInit
     return newPos;
   }
   eatenApples = [];
+  snakePosition$: Observable<[ Vector3[], { time: number, delta: number, futureTime: number} ]>;
+  apple$: Observable<any>;
   ngAfterViewInit()
   {
-    this.cdr.detectChanges();
-
-    return this.loop$.pipe
+    this.apple$ = this.snakePosition$.pipe
     (
-      tap( _ =>
-      {
-        if ( this.applePosition.value.equals( this.snakePosition[0].round() ) )
-        {
-          // this.applePosition.next( this.randomApplePosition() );
-          this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 2 ) ) );
-          this.eatenApples.push( this.snakePosition[0].clone() );
-        }
-      } ),
-    ).subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) );
+      filter( ([ [ snakePosition ] ]) => this.applePosition.value.equals( snakePosition ) ),
+      map( ([ [ snakePosition ] ]) => snakePosition ),
+      tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 2 ) ) ) )
+      // {
+        // if ( this.applePosition.value.equals( snakePosition ) )
+        // {
+        //   // this.applePosition.next( this.randomApplePosition() );
+        //   // this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 2 ) ) );
+        //   // this.eatenApples.push( this.snakePosition[0].clone() );
+        // }
+      // } ),
+    );
+    this.loop$.subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) );
+    this.cdr.detectChanges();
 
   }
 }

@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, } from 'rxjs/operators';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
 import { vZero, vY } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -81,6 +81,13 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Input() loop$: Observable<{ time: number, delta: number}>;
   @Output() loop$Change = new EventEmitter<Observable<any>>();
 
+  @Input() subLoop$: Observable<any>;
+
+  @Input() position$: Observable<any>;
+  @Output() position$Change = new EventEmitter<Observable<any>>();
+
+  @Input() apple$: Observable<any>;
+
   @Input() eatenApples: Vector3[] = [];
   @Input() renderer: any;
 
@@ -93,7 +100,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   constructor( private cdr: ChangeDetectorRef ) {
     super();
   }
-  subLoop$: Observable<any>;
+
   ngAfterViewInit()
   {
     this.subLoop$ = this.loop$.pipe
@@ -114,14 +121,17 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             current.delta = current.time - current.futureTime;
             current.futureTime += this.speed - dt;
           }
+
           if ( this.eatenApples[0] && this.cubes.last.object.position.equals( this.eatenApples[0] ) )
           {
+            debugger;
             timer( this.speed, animationFrameScheduler ).pipe( tap( _ =>
             {
               this.segments.push(this.eatenApples.shift());
               this.cdr.detectChanges();
             } ) ).subscribe();
           }
+
           this.positionChange.emit( this.cubes.toArray().map( segment => segment.object.position.round() ) );
         }
         return current;
@@ -133,7 +143,17 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       share(),
     );
 
-    this.loop$Change.emit( this.subLoop$ );
+    this.position$Change.emit( this.subLoop$.pipe
+      (
+        scan<any, any>( ( [prev], [curr] ) =>
+        {
+          let select = false;
+          if ( prev.futureTime !== curr.futureTime ) select = true;
+          return [curr, select];
+        }),
+        filter( ([ _, select ]) => !!select ),
+        map( ([timeData]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
+      ) );
 
     this.segments = Array( +this.length )
       .fill( undefined )
@@ -170,10 +190,11 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   ngOnChanges( changes: SimpleChanges )
   {
-    if ( changes.length && changes.length.currentValue > changes.length.previousValue )
-    {
-    }
-
+    // if ( changes.length && changes.length.currentValue > changes.length.previousValue )
+    // {
+    // }
+    if ( changes.apple$ && changes.apple$.currentValue )
+      this.apple$.subscribe( console.log.bind( undefined, 'apple: ' ) );
   }
 
   updateCamera( quaternion ) {
