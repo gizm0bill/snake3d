@@ -9,13 +9,17 @@ import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
 import { AnonymousSubject } from 'rxjs/internal/Subject';
 
-const snakeDelay = ( keyFrames: number, mark?: string ) => (source: AnonymousSubject<any>) => defer( () =>
+const dirs = {};
+let currentExhausts;
+const snakeDelay = ( keyFrames: number, tag?: string ) => (source: AnonymousSubject<any>) => defer( () =>
 {
-  const dirs = [];
-  let dirExhausts = [];
+  const dirExhausts = {};
+  if ( currentExhausts )
+    for ( const i in currentExhausts ) if ( currentExhausts.hasOwnProperty(i) )
+      dirExhausts[i] = currentExhausts[i] + 1;
+  currentExhausts = dirExhausts;
   return source.pipe
   (
-    // map( _ => { debugger; return _; } ),
     scan<any, any>
     ((
       [ { futureTime: prevFutureTime } ],
@@ -24,13 +28,21 @@ const snakeDelay = ( keyFrames: number, mark?: string ) => (source: AnonymousSub
     {
       if ( !!currentDirection )
       {
-        dirs.push( currentDirection );
-        dirExhausts.push( keyFrames );
+        dirs[ futureTime ] = currentDirection;
+        // dirs.push( currentDirection );
+        dirExhausts[ futureTime ] = keyFrames;
       }
       let retDirection: DirectionCommand;
       if ( prevFutureTime !== futureTime )
-        dirExhausts = dirExhausts.reduceRight( (acc, val) => ( --val >= 0 ? [val] : ( retDirection = dirs.shift(), [] ) ).concat(acc), [] );
-      return [ { futureTime, delta }, retDirection, mark ];
+      {
+        // dirExhausts = dirExhausts.reduceRight( (acc, val) => ( --val >= 0 ? [val] : ( retDirection = dirs.shift(), [] ) ).concat(acc), [] );
+        for ( const i in dirs ) if ( dirs.hasOwnProperty(i) ) {
+          if ( !dirExhausts[i] ) dirExhausts[i] = 0;
+          dirExhausts[i]--;
+          if ( dirExhausts[i] === -1 ) retDirection = dirs[i];
+        }
+      }
+      return [ { futureTime, delta }, retDirection, tag ];
     } )
   );
 });
@@ -150,10 +162,10 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
     // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
 
-    const x = this.subLoop$.pipe( snakeDelay( 1, 'test' ) ),
-    x1 = x.pipe( snakeDelay( 1, 'test2' ) );
-    x.subscribe( console.log.bind( undefined, '1…' ) );
-    x1.subscribe( console.log.bind( undefined, '2…' ) );
+    // const x = this.subLoop$.pipe( snakeDelay( 1, 'test' ) ),
+    // x1 = x.pipe( snakeDelay( 1, 'test2' ) );
+    // x.subscribe( console.log.bind( undefined, '1…' ) );
+    // x1.subscribe( console.log.bind( undefined, '2…' ) );
   }
 
   ngOnChanges( changes: SimpleChanges )
@@ -168,7 +180,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.camera.camera.up.copy( vY ).applyQuaternion( quaternion ).normalize();
   }
 
-  loop4Segment( index: number ) { return this.subLoop$.pipe( snakeDelay( index ) ); }
+  loop4Segment( index: number ) { return this.subLoop$.pipe( snakeDelay( index, `seg ${index}` ) ); }
 
   direction$ = new Subject<DirectionCommand>();
 
