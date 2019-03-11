@@ -1,6 +1,6 @@
 import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter, NgZone } from '@angular/core';
 import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from '../../three-js';
-import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion, ArrowHelper, MeshBasicMaterial } from 'three';
+import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion, ArrowHelper, MeshBasicMaterial, BufferGeometry } from 'three';
 import { Observable, of } from 'rxjs';
 import { scan, withLatestFrom, startWith, switchAll, combineLatest, switchMap, tap, bufferWhen, exhaustMap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
@@ -39,8 +39,9 @@ function createBoxWithRoundedEdges( width: number, height: number, depth: number
   });
 
   geometry.center();
-  return geometry.toNonIndexed();
+  return geometry;
 }
+let cubeGeometry: BufferGeometry;
 
 @Directive
 ({
@@ -111,11 +112,10 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   {
     this.zone.runOutsideAngular( () =>
     {
-      this.cube = new Mesh
-      (
-        createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 ),
-        new MeshPhongMaterial( { color: 0x2194CE } )
-      );
+      const geo = cubeGeometry
+        ? cubeGeometry.clone()
+        : cubeGeometry = createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 );
+      this.cube = new Mesh( geo, new MeshPhongMaterial( { color: 0x2194CE } ) );
       this.cube.scale.copy( new Vector3( .75, .75, .75 ) );
       this.cube.position.setZ( -this.size );
       this.setupHelpers();

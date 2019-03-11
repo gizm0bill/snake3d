@@ -9,7 +9,7 @@ import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
 import { AnonymousSubject } from 'rxjs/internal/Subject';
 
-const snakeDelay = ( keyFrames: number ) => (source: AnonymousSubject<any>) => defer( () =>
+const snakeDelay = ( keyFrames: number, mark?: string ) => (source: AnonymousSubject<any>) => defer( () =>
 {
   const dirs = [];
   let dirExhausts = [];
@@ -30,11 +30,10 @@ const snakeDelay = ( keyFrames: number ) => (source: AnonymousSubject<any>) => d
       let retDirection: DirectionCommand;
       if ( prevFutureTime !== futureTime )
         dirExhausts = dirExhausts.reduceRight( (acc, val) => ( --val >= 0 ? [val] : ( retDirection = dirs.shift(), [] ) ).concat(acc), [] );
-      return [ { futureTime, delta }, retDirection ];
+      return [ { futureTime, delta }, retDirection, mark ];
     } )
   );
 });
-
 
 const dkd = 'document:keydown.';
 @Component
@@ -150,6 +149,11 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 100 );
     // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
     // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
+
+    const x = this.subLoop$.pipe( snakeDelay( 1, 'test' ) ),
+    x1 = x.pipe( snakeDelay( 1, 'test2' ) );
+    x.subscribe( console.log.bind( undefined, '1…' ) );
+    x1.subscribe( console.log.bind( undefined, '2…' ) );
   }
 
   ngOnChanges( changes: SimpleChanges )

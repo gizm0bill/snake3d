@@ -66,7 +66,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   private direction$ = new Subject;
 
-  snakeLength = 5;
+  snakeLength = 3;
   snakeSize = 2;
   snakeSpeed = 2000;
   snakePosition = vZero.clone();
@@ -108,7 +108,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
   private newLoop()
   {
-    return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
+    return timer( 0, 1000 / 6, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {
