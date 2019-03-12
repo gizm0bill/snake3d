@@ -17,7 +17,7 @@ three-renderer( #mainRenderer )
     three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
 
     game-snake( [speed]='snakeSpeed', [length]='snakeLength', [size]='snakeSize', [renderer]='childRenderer',
-      [(position)]='snakePosition', [eatenApples]='eatenApples', [camera]='gameCamera', [loop$]='loop$',
+      [eatenApples]='eatenApples', [camera]='gameCamera', [loop$]='loop$',
       [(position$)]='snakePosition$',
       [(apple$)]='apple$' )
     game-apple( [position]='applePosition$|async' )

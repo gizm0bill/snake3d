@@ -121,18 +121,15 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             current.delta = current.time - current.futureTime;
             current.futureTime += this.speed - dt;
           }
+          // if ( this.eatenApples[0] && this.cubes.last.object.position.equals( this.eatenApples[0] ) )
+          // {
+          //   timer( this.speed, animationFrameScheduler ).pipe( tap( _ =>
+          //   {
+          //     this.segments.push(this.eatenApples.shift());
+          //     this.cdr.detectChanges();
+          //   } ) ).subscribe();
+          // }
 
-          if ( this.eatenApples[0] && this.cubes.last.object.position.equals( this.eatenApples[0] ) )
-          {
-            debugger;
-            timer( this.speed, animationFrameScheduler ).pipe( tap( _ =>
-            {
-              this.segments.push(this.eatenApples.shift());
-              this.cdr.detectChanges();
-            } ) ).subscribe();
-          }
-
-          this.positionChange.emit( this.cubes.toArray().map( segment => segment.object.position.round() ) );
         }
         return current;
       }, { futureTime: performance.now() + this.speed } ),
@@ -152,7 +149,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           return [curr, select];
         }),
         filter( ([ _, select ]) => !!select ),
-        map( ([timeData]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
+        map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
       ) );
 
     this.segments = Array( +this.length )
@@ -164,7 +161,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       this.object.add( ...this.cubes.map( ( { object } ) => object ) );
       if ( this.cubes.first && this.camera ) // camera -> head
         this.cubes.first.cube.add( this.camera.camera );
-      this.positionChange.emit( this.cubes.toArray().map( segment => segment.object.position.round() ) );
     });
     super.ngAfterViewInit();
     this.cdr.detectChanges();
@@ -190,11 +186,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   ngOnChanges( changes: SimpleChanges )
   {
-    // if ( changes.length && changes.length.currentValue > changes.length.previousValue )
-    // {
-    // }
     if ( changes.apple$ && changes.apple$.currentValue )
-      this.apple$.subscribe( console.log.bind( undefined, 'apple: ' ) );
+      this.apple$.subscribe( _ => this.eatenApples.push( _.clone() ) );
   }
 
   updateCamera( quaternion ) {

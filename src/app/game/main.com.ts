@@ -69,7 +69,6 @@ export class MainCom implements OnDestroy, AfterViewInit
   snakeLength = 3;
   snakeSize = 2;
   snakeSpeed = 2000;
-  snakePosition = vZero.clone();
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
@@ -121,12 +120,12 @@ export class MainCom implements OnDestroy, AfterViewInit
   loop$ = this.pauseResume$.pipe( switchMap( resume => resume ? this.newLoop() : empty() ) );
 
   gridSize = 5;
-  private randomApplePosition()
+  private randomApplePosition( snakePositions: Vector3[] )
   {
     let newPos: Vector3;
     const newPosFn = () => Math.floor( Math.random() * ( this.gridSize + this.gridSize + 1 ) - this.gridSize ) * this.snakeSize;
     do { newPos = new Vector3( newPosFn(), newPosFn(), newPosFn() ); }
-    while ( (this.snakePosition as unknown as Vector3[]).find( pos => !!pos.round().equals( newPos ) ) );
+    while ( snakePositions.find( pos => !!pos.round().equals( newPos ) ) );
     return newPos;
   }
   eatenApples = [];
