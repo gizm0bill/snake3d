@@ -1,9 +1,9 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, } from 'rxjs/operators';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, delay, withLatestFrom, } from 'rxjs/operators';
 import { Vector3, Group } from 'three';
-import { vZero, vY } from '../three-js';
+import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
@@ -95,15 +95,16 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   trackByFn( index: number, vector: Vector3 )
   {
-    return `${index}:${vector.toArray().join()}`;
+    return `${index}`;
   }
   constructor( private cdr: ChangeDetectorRef ) {
     super();
   }
 
+  private _subLoop$: Observable<any>;
   ngAfterViewInit()
   {
-    this.subLoop$ = this.loop$.pipe
+    this._subLoop$ = this.loop$.pipe
     (
       scan<any, any>( (previous, current) =>
       {
@@ -132,7 +133,10 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
         }
         return current;
-      }, { futureTime: performance.now() + this.speed } ),
+      }, { futureTime: performance.now() + this.speed } )
+    );
+    this.subLoop$ = this._subLoop$.pipe
+    (
       combineLatest
       (
         this.direction$.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) )
@@ -152,15 +156,22 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
       ) );
 
-    this.segments = Array( +this.length )
-      .fill( undefined )
-      .map( ( _, index ) => vZero.clone().sub( this.position.clone().add( new Vector3( 0, 0, +this.size * index ) ) ) );
+    // this.segments = Array( +this.length )
+    //   .fill( undefined )
+    //   .map( ( _, index ) => vZero.clone().sub( this.position.clone().add( new Vector3( 0, 0, +this.size * index ) ) ) );
+
+    this.segments = Array( 1 );
     this._object = new Group;
     this.cubes.changes.subscribe( _ =>
     {
-      this.object.add( ...this.cubes.map( ( { object } ) => object ) );
       if ( this.cubes.first && this.camera ) // camera -> head
         this.cubes.first.cube.add( this.camera.camera );
+      if ( _.length === 1 && this.length > 1 )
+      {
+        this.segments.push( ...Array( this.length - 1 ) );
+        this.cdr.detectChanges();
+      }
+      this.object.add( ...this.cubes.map( ( { object } ) => object ) );
     });
     super.ngAfterViewInit();
     this.cdr.detectChanges();
@@ -184,10 +195,36 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // x1.subscribe( console.log.bind( undefined, '2…' ) );
   }
 
+  private get endTime() { console.log('wtf...'); return this.length * this.speed; }
+
   ngOnChanges( changes: SimpleChanges )
   {
     if ( changes.apple$ && changes.apple$.currentValue )
-      this.apple$.subscribe( _ => this.eatenApples.push( _.clone() ) );
+    {
+      let appleExhausts = [];
+      this._subLoop$.pipe
+      (
+        combineLatest( this.apple$.pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) ) ),
+        scan<any, any>
+        (( [ { futureTime: prevFutureTime } ], [ { futureTime }, apple ] ) =>
+        {
+          if ( !!apple ) appleExhausts.push( this.length );
+          let retApple: boolean;
+          if ( prevFutureTime !== futureTime )
+            appleExhausts = appleExhausts.reduceRight( (acc, val) =>
+              ( --val > 0 ? [val] : ( retApple = true, [] ) ).concat(acc), [] );
+          return [ { futureTime }, retApple ];
+        }),
+        filter( ([ _, apple ]) => !!apple ),
+        tap( _ =>
+        {
+          this.segments.push( undefined );
+          this.cdr.detectChanges();
+          // debugger;
+
+        }),
+      ).subscribe( console.log.bind( undefined, 'apple:' ) );
+    }
   }
 
   updateCamera( quaternion ) {
