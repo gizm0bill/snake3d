@@ -1,8 +1,7 @@
-ng-template( ngFor, let-segment, [ngForOf]="segments", let-i="index", let-isFirst="first", [ngForTrackBy]="trackByFn" )
+ng-template( ngFor, let-segment, [ngForOf]="segments", let-i="index", let-isFirst="first" )
   game-snake-segment(
     [speed]="speed",
     [size]="size",
     (rotation$)="isFirst ? updateCamera($event) : void()",
-    [loop$]="loop4Segment(i)",
     [renderer]="renderer",
     [index]="i" )

@@ -1,8 +1,8 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
-  forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
-import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, delay, withLatestFrom, } from 'rxjs/operators';
-import { Vector3, Group } from 'three';
+  forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
+import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty } from 'rxjs';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, } from 'rxjs/operators';
+import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
@@ -57,14 +57,10 @@ const dkd = 'document:keydown.';
 })
 export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChanges
 {
-  void() {}
-  log( ...args: any[] ) { console.log('…snake…', ...args); }
-  // @ViewChildren(MeshDir) cubes: QueryList<MeshDir>;
-  @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
 
+  @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
   // attached camera
   @Input() camera: ACamera<any>;
-
   // initial speed
   @Input() speed = 1000;
   // initial size
@@ -93,19 +89,20 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   get lookAtPosition(){ return  this.cubes.first ? this.cubes.first.lookAt : vZero; }
 
-  trackByFn( index: number, vector: Vector3 )
-  {
-    return `${index}`;
-  }
-  constructor( private cdr: ChangeDetectorRef ) {
+  cubeDiffer: IterableDiffer<any>;
+  constructor
+  (
+    private cdr: ChangeDetectorRef,
+    private differs: IterableDiffers
+  ) {
     super();
+    this.cubeDiffer = this.differs.find([]).create(null);
   }
 
-  private lastPos = undefined;
-  private _subLoop$: Observable<any>;
+  cubeLoops = [];
   ngAfterViewInit()
   {
-    this._subLoop$ = this.loop$.pipe
+    const keyFrameLoop$ = this.loop$.pipe
     (
       scan<any, any>( (previous, current) =>
       {
@@ -126,19 +123,23 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         }
         return current;
       }, { futureTime: performance.now() + this.speed } ),
-      share()
     );
+    const directionLoop$ = keyFrameLoop$.pipe( combineLatest( this.directionOnce$ ), share() );
 
-    this.subLoop$ = this._subLoop$.pipe
-    (
-      combineLatest
-      (
-        this.direction$.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) )
-      ),
-      share(),
-    );
+    this.cubes.changes.subscribe( cubes =>
+    {
+      // camera -> head
+      if ( this.cubes.first && this.camera ) this.cubes.first.cube.add( this.camera.camera );
 
-    this.position$Change.emit( this.subLoop$.pipe
+      this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
+      {
+        this.cubeLoops.push( directionLoop$.pipe( snakeDelay( _.currentIndex ) ) );
+        this.addChild( _.item.object );
+      } );
+
+    } );
+
+    const keyFramePosition$ = keyFrameLoop$.pipe
       (
         scan<any, any>( ( [prev], [curr] ) =>
         {
@@ -148,118 +149,62 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         }),
         filter( ([ _, select ]) => !!select ),
         map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
-      ) );
+    );
+    this.position$Change.emit( keyFramePosition$ );
 
-    // this.segments = Array( +this.length )
-    //   .fill( undefined )
-    //   .map( ( _, index ) => vZero.clone().sub( this.position.clone().add( new Vector3( 0, 0, +this.size * index ) ) ) );
+    // this.subLoop$ = this._subLoop$.pipe
+    // (
+    //   combineLatest
+    //   (
+    //     this.direction$.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) )
+    //   ),
+    //   share(),
+    // );
+
+    // this.position$Change.emit( this.subLoop$.pipe
+    //   (
+    //     scan<any, any>( ( [prev], [curr] ) =>
+    //     {
+    //       let select = false;
+    //       if ( prev.futureTime !== curr.futureTime ) select = true;
+    //       return [curr, select];
+    //     }),
+    //     filter( ([ _, select ]) => !!select ),
+    //     map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
+    //   ) );
 
     this.segments = Array( 1 );
     this._object = new Group;
-    this.cubes.changes.subscribe( _ =>
-    {
-      if ( this.cubes.first && this.camera ) // camera -> head
-        this.cubes.first.cube.add( this.camera.camera );
-      if ( this.cubes.length > 1 && this.lastPos )
-      {
-        console.log( 'changes:', this.lastPos[0], this.cubes.first.object.position.toArray().join() );
-        this.cubes.last.object.position.copy( this.lastPos[0] );
-        this.cubes.last.object.quaternion.copy( this.lastPos[1] );
-        console.log( this.cubes.toArray().map( c => c.object.position.clone().toArray().join() ) );
-        console.log( '----------' );
-        this.lastPos = undefined;
-      }
-      // if ( _.length === 1 && this.length > 1 )
-      // {
-      //   this.segments.push( ...Array( this.length - 1 ) );
-      //   this.cdr.detectChanges();
-      // }
-      this.object.add( ...this.cubes.map( ( { object } ) => object ) );
-    });
     super.ngAfterViewInit();
-    this.cdr.detectChanges();
-    this.cdr.detach();
 
-    // interval( this.speed ).pipe(
-    //   filter( i => {
-    //     if ( i % 7 === 0 || i % 8 === 0 ) return true;
-    //     return false;
-    //   } ),
-    //   tap( _ => this.direction$.next( DirectionCommand.LEFT ) )
-    // ).subscribe();
-
-    // setTimeout( () => this.direction$.next( DirectionCommand.UP ), 100 );
-    // setTimeout( () => this.direction$.next( DirectionCommand.RIGHT ), 4500 );
-    // setTimeout( () => this.direction$.next( DirectionCommand.DOWN ), 6000 );
-
-    // const x = this.subLoop$.pipe( snakeDelay( 1, 'test' ) ),
-    // x1 = x.pipe( snakeDelay( 1, 'test2' ) );
-    // x.subscribe( console.log.bind( undefined, '1…' ) );
-    // x1.subscribe( console.log.bind( undefined, '2…' ) );
   }
-
   ngOnChanges( changes: SimpleChanges )
   {
-    if ( changes.apple$ && changes.apple$.currentValue )
-    {
-      let appleExhausts = [];
-      this._subLoop$.pipe
-      (
-        combineLatest( this.apple$.pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) ) ),
-        scan<any, any>
-        (( [ { futureTime: prevFutureTime }, prevApple, add ], [ { futureTime, time }, apple ], index ) =>
-        {
-          console.log('snake:', futureTime );
-          if ( this.lastPos )
-          {
-            this.segments.push(undefined);
-            this.cdr.detectChanges();
-          }
-          if ( !!apple ) appleExhausts.push( this.length );
-          let retApple: boolean;
-          if ( prevFutureTime !== futureTime )
-          {
-            appleExhausts = appleExhausts.reduceRight( (acc, val) =>
-              ( --val > 0 ? [val] : ( retApple = true, [] ) ).concat(acc), [] );
-            console.log('|-snake:', futureTime );
-          }
-          // if ( retApple ) { debugger; }
-          return [ { futureTime }, retApple, add ];
-        }),
-        filter( ([ _, apple ]) => !!apple ),
-        tap( _ =>
-        {
-          const lastCube = this.cubes.last.object;
-          this.lastPos = [ lastCube.position.clone(), lastCube.quaternion.clone() ];
-          console.log( 'apple:', this.lastPos[0].toArray().join() );
-          // debugger;
-        }),
-      ).subscribe();
-    }
   }
 
   updateCamera( quaternion ) {
     this.camera.camera.up.copy( vY ).applyQuaternion( quaternion ).normalize();
   }
 
-  loop4Segment( index: number ) { return this.subLoop$.pipe( snakeDelay( index, `seg ${index}` ) ); }
-
-  direction$ = new Subject<DirectionCommand>();
+  private direction = new Subject<DirectionCommand>();
+  private directionOnce$ = this.direction.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) );
 
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)
-  private arrowUp() { this.direction$.next( DirectionCommand.UP ); }
+  private arrowUp() { this.direction.next( DirectionCommand.UP ); }
 
   @HostListener(`${dkd}s`)
   @HostListener(`${dkd}arrowDown`)
-  private arrowDown() { this.direction$.next( DirectionCommand.DOWN ); }
+  private arrowDown() { this.direction.next( DirectionCommand.DOWN ); }
 
   @HostListener(`${dkd}a`)
   @HostListener(`${dkd}arrowLeft`)
-  private arrowLeft() { this.direction$.next( DirectionCommand.LEFT ); }
+  private arrowLeft() { this.direction.next( DirectionCommand.LEFT ); }
 
   @HostListener(`${dkd}d`)
   @HostListener(`${dkd}arrowRight`)
-  private arrowRight() { this.direction$.next( DirectionCommand.RIGHT ); }
+  private arrowRight() { this.direction.next( DirectionCommand.RIGHT ); }
 
+  void() {}
+  log( ...args: any[] ) { console.log('…snake…', ...args); }
 }
