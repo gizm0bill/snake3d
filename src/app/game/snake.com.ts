@@ -23,7 +23,7 @@ const snakeDelay = ( keyFrames: number, tag?: string ) => (source: AnonymousSubj
     scan<any, any>
     ((
       [ { futureTime: prevFutureTime } ],
-      [ { futureTime, delta }, currentDirection ]
+      [ { futureTime, delta, time }, currentDirection ]
     ) =>
     {
       if ( !!currentDirection )
@@ -42,7 +42,7 @@ const snakeDelay = ( keyFrames: number, tag?: string ) => (source: AnonymousSubj
           if ( dirExhausts[i] === -1 ) retDirection = dirs[i];
         }
       }
-      return [ { futureTime, delta }, retDirection, tag ];
+      return [ { futureTime, delta, time }, retDirection, tag ];
     } )
   );
 });
@@ -101,6 +101,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     super();
   }
 
+  private lastPos = undefined;
   private _subLoop$: Observable<any>;
   ngAfterViewInit()
   {
@@ -122,19 +123,12 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             current.delta = current.time - current.futureTime;
             current.futureTime += this.speed - dt;
           }
-          // if ( this.eatenApples[0] && this.cubes.last.object.position.equals( this.eatenApples[0] ) )
-          // {
-          //   timer( this.speed, animationFrameScheduler ).pipe( tap( _ =>
-          //   {
-          //     this.segments.push(this.eatenApples.shift());
-          //     this.cdr.detectChanges();
-          //   } ) ).subscribe();
-          // }
-
         }
         return current;
-      }, { futureTime: performance.now() + this.speed } )
+      }, { futureTime: performance.now() + this.speed } ),
+      share()
     );
+
     this.subLoop$ = this._subLoop$.pipe
     (
       combineLatest
@@ -166,11 +160,20 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     {
       if ( this.cubes.first && this.camera ) // camera -> head
         this.cubes.first.cube.add( this.camera.camera );
-      if ( _.length === 1 && this.length > 1 )
+      if ( this.cubes.length > 1 && this.lastPos )
       {
-        this.segments.push( ...Array( this.length - 1 ) );
-        this.cdr.detectChanges();
+        console.log( 'changes:', this.lastPos[0], this.cubes.first.object.position.toArray().join() );
+        this.cubes.last.object.position.copy( this.lastPos[0] );
+        this.cubes.last.object.quaternion.copy( this.lastPos[1] );
+        console.log( this.cubes.toArray().map( c => c.object.position.clone().toArray().join() ) );
+        console.log( '----------' );
+        this.lastPos = undefined;
       }
+      // if ( _.length === 1 && this.length > 1 )
+      // {
+      //   this.segments.push( ...Array( this.length - 1 ) );
+      //   this.cdr.detectChanges();
+      // }
       this.object.add( ...this.cubes.map( ( { object } ) => object ) );
     });
     super.ngAfterViewInit();
@@ -195,8 +198,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // x1.subscribe( console.log.bind( undefined, '2…' ) );
   }
 
-  private get endTime() { console.log('wtf...'); return this.length * this.speed; }
-
   ngOnChanges( changes: SimpleChanges )
   {
     if ( changes.apple$ && changes.apple$.currentValue )
@@ -206,24 +207,34 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       (
         combineLatest( this.apple$.pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) ) ),
         scan<any, any>
-        (( [ { futureTime: prevFutureTime } ], [ { futureTime }, apple ] ) =>
+        (( [ { futureTime: prevFutureTime }, prevApple, add ], [ { futureTime, time }, apple ], index ) =>
         {
+          console.log('snake:', futureTime );
+          if ( this.lastPos )
+          {
+            this.segments.push(undefined);
+            this.cdr.detectChanges();
+          }
           if ( !!apple ) appleExhausts.push( this.length );
           let retApple: boolean;
           if ( prevFutureTime !== futureTime )
+          {
             appleExhausts = appleExhausts.reduceRight( (acc, val) =>
               ( --val > 0 ? [val] : ( retApple = true, [] ) ).concat(acc), [] );
-          return [ { futureTime }, retApple ];
+            console.log('|-snake:', futureTime );
+          }
+          // if ( retApple ) { debugger; }
+          return [ { futureTime }, retApple, add ];
         }),
         filter( ([ _, apple ]) => !!apple ),
         tap( _ =>
         {
-          this.segments.push( undefined );
-          this.cdr.detectChanges();
+          const lastCube = this.cubes.last.object;
+          this.lastPos = [ lastCube.position.clone(), lastCube.quaternion.clone() ];
+          console.log( 'apple:', this.lastPos[0].toArray().join() );
           // debugger;
-
         }),
-      ).subscribe( console.log.bind( undefined, 'apple:' ) );
+      ).subscribe();
     }
   }
 

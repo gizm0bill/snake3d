@@ -137,7 +137,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     (
       filter( ([ [ snakePosition ] ]) => this.applePosition.value.equals( snakePosition ) ),
       map( ([ [ snakePosition ] ]) => snakePosition ),
-      // tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 4 ) ) ) )
+      tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 4 ) ) ) )
       // {
         // if ( this.applePosition.value.equals( snakePosition ) )
         // {

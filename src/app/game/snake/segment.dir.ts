@@ -63,7 +63,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   private _lookAtPosition = new Vector3;
 
   @Input() clone: Object3D;
-
+  @Input() index: number;
   @Output() get lookAt()
   {
     this.cube.getWorldPosition( this._lookAtPosition );
@@ -121,11 +121,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         this.cube.position.setZ( -this.size );
         this.setupHelpers();
         this.innerBox.add( this.cube );
-        if ( this.clone )
-        {
-          this.outerBox.position.copy( this.clone.position.clone().sub( vZ.clone().multiplyScalar( this.size ) ) );
-          this.outerBox.quaternion.copy( this.clone.quaternion );
-        }
         this.outerBox.add( this.innerBox );
         this._object = this.outerBox;
 
@@ -134,7 +129,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         scan<any, any>
         ((
           [ { futureTime: prevFutureTime }, endDirection ],
-          [ { futureTime, delta }, currentDirection ]
+          [ { futureTime, delta, time }, currentDirection ]
         ) =>
         {
           if ( futureTime !== prevFutureTime )
@@ -161,10 +156,10 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
               this.rotation$.emit( this.outerBox.quaternion );
               // startDirection = undefined;
             }
-            console.log( this.outerBox.position );
             this.outerBox.translateZ( this.size );
-            console.log( this.outerBox.position );
-            console.log( '---' );
+            if ( !this.index ) {
+              console.log('sgment:', futureTime );
+            } 
             this.outerBox.updateMatrixWorld(true);
             this.innerBox.updateMatrixWorld(true);
             this.cube.updateMatrixWorld(true);
@@ -179,8 +174,8 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           {
             this.cube.translateZ( delta * this.size / this.speed );
           }
-          return [ { futureTime, delta }, endDirection ];
-        }, [{ futureTime: null }] )
+          return [ { futureTime, delta, time }, endDirection ];
+        }, [{ futureTime: performance.now() + this.speed }] )
       )
       .subscribe();
     });

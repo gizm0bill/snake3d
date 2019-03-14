@@ -1,13 +1,8 @@
 ng-template( ngFor, let-segment, [ngForOf]="segments", let-i="index", let-isFirst="first", [ngForTrackBy]="trackByFn" )
-  game-snake-segment( *ngIf="isFirst; else clonedSegmentTpl",
+  game-snake-segment(
     [speed]="speed",
     [size]="size",
-    (rotation$)="updateCamera($event)",
+    (rotation$)="isFirst ? updateCamera($event) : void()",
     [loop$]="loop4Segment(i)",
-    [renderer]="renderer" )
-ng-template( #clonedSegmentTpl, let-i )
-  game-snake-segment( [clone]="this.cubes.last.object",
-    [speed]="speed",
-    [size]="size",
-    [loop$]="loop4Segment(i)",
-    [renderer]="renderer" )
+    [renderer]="renderer",
+    [index]="i" )
