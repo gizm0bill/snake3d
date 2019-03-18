@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
 import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty, Subscription } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, mergeMap, } from 'rxjs/operators';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -132,6 +132,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         return current;
       }, { futureTime: performance.now() + this.speed } ),
     );
+
     const keyFrameDirection$ = keyFrameLoop$.pipe( combineLatest( this.directionOnce$ ), share() );
     let cubeLoopsSub: Subscription;
     this.cubes.changes.subscribe( cubes =>
@@ -147,7 +148,11 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         this.cdr.detectChanges();
         this.addChild( _.item.object );
         if ( cubeLoopsSub ) cubeLoopsSub.unsubscribe();
-        cubeLoopsSub = merge( ...this.cubeLoops ).subscribe();
+        cubeLoopsSub = of(true).pipe
+        (
+          withLatestFrom( a ),
+          mergeOperator( ...this.cubeLoops )
+        ).subscribe();
       } );
 
     } );
@@ -165,6 +170,22 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     );
     this.position$Change.emit( keyFramePosition$ );
 
+    const a = new Subject,
+      appleOnce$ = a.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) );
+    let appleQueue = [];
+
+    keyFrameLoop$.pipe(
+      combineLatest( appleOnce$ ),
+      scan<any, any>( ( [prev], [curr, apple] ) =>
+      {
+        if ( apple ) appleQueue.push( this.length );
+        if ( prev.futureTime !== curr.futureTime )
+          appleQueue = appleQueue.reduceRight( (acc, val) => ( --val >= 0 ? [val] : ( this.segments.push(undefined), this.cdr.detectChanges(), [] ) ).concat(acc), [] );
+        console.log( appleQueue );
+        return [curr, apple];
+      })
+    ).subscribe( );
+
     // this.subLoop$ = this._subLoop$.pipe
     // (
     //   combineLatest
@@ -173,8 +194,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     //   ),
     //   share(),
     // );
-
-    setTimeout( () => (this.segments.push(undefined), this.cdr.detectChanges()), 7000 );
+    setTimeout( () => a.next(true), 3000 );
+    // setTimeout( () => (this.segments.push(undefined), this.cdr.detectChanges()), 7000 );
 
     this.segments = Array( 1 );
     this._object = new Group;
