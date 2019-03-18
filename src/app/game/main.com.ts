@@ -147,6 +147,7 @@ export class MainCom implements OnDestroy, AfterViewInit
         // }
       // } ),
     );
+    // debugger;
     this.loop$.subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) );
     this.cdr.detectChanges();
 

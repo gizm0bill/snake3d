@@ -122,14 +122,14 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     this.innerBox.add( this.cube );
     this.outerBox.add( this.innerBox );
     this._object = this.outerBox;
-    debugger;
   }
 
   ngOnChanges( changes: SimpleChanges )
   {
     if ( !changes.loop$ ) return;
     if ( changes.loop$ && !changes.loop$.currentValue ) return;
-    this.loop$Change.emit(  this.subLoop$ = this.loop$.pipe
+    if ( !!changes.loop$.previousValue ) return; // only once, TODO: something?...
+    this.subLoop$ = this.loop$.pipe
     (
       scan<any, any>
       ((
@@ -161,7 +161,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
             this.rotation$.emit( this.outerBox.quaternion );
             // startDirection = undefined;
           }
-          console.log( '-----', this.outerBox.position.toArray().join() );
+          // console.log( '-----', this.outerBox.position.toArray().join() );
           this.outerBox.translateZ( this.size );
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);
@@ -179,7 +179,9 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         }
         return [ { futureTime, delta, time }, endDirection ];
       }, [{ futureTime: performance.now() + this.speed }] )
-    ) );
+    );
+    (this.subLoop$ as any).__id = Math.random();
+    this.loop$Change.emit( this.subLoop$ );
 
     super.ngAfterViewInit();
   }

@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
-import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, } from 'rxjs/operators';
+import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty, Subscription } from 'rxjs';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, mergeMap, } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -99,7 +99,15 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.cubeDiffer = this.differs.find([]).create(null);
   }
 
-  cubeLoops = [];
+  private _cubeLoops = [];
+  cubeLoops = new Proxy( this._cubeLoops,
+  {
+    set: function(target, property, value, receiver) {
+      target[property] = value;
+      console.log( 'Set %s to %o', property, value);
+      return true;
+    }
+  });
   ngAfterViewInit()
   {
     const keyFrameLoop$ = this.loop$.pipe
@@ -124,17 +132,22 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         return current;
       }, { futureTime: performance.now() + this.speed } ),
     );
-    const directionLoop$ = keyFrameLoop$.pipe( combineLatest( this.directionOnce$ ), share() );
-
+    const keyFrameDirection$ = keyFrameLoop$.pipe( combineLatest( this.directionOnce$ ), share() );
+    let cubeLoopsSub: Subscription;
     this.cubes.changes.subscribe( cubes =>
     {
       // camera -> head
       if ( this.cubes.first && this.camera ) this.cubes.first.cube.add( this.camera.camera );
-
+      console.log('cubeLoops', this._cubeLoops);
       this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
       {
-        this.cubeLoops.push( directionLoop$.pipe( snakeDelay( _.currentIndex ) ) );
+        const l = keyFrameDirection$.pipe( snakeDelay( _.currentIndex ) );
+        (l as any).__id = Math.random();
+        this.cubeLoops.push( l );
+        this.cdr.detectChanges();
         this.addChild( _.item.object );
+        if ( cubeLoopsSub ) cubeLoopsSub.unsubscribe();
+        cubeLoopsSub = merge( ...this.cubeLoops ).subscribe();
       } );
 
     } );
@@ -161,17 +174,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     //   share(),
     // );
 
-    // this.position$Change.emit( this.subLoop$.pipe
-    //   (
-    //     scan<any, any>( ( [prev], [curr] ) =>
-    //     {
-    //       let select = false;
-    //       if ( prev.futureTime !== curr.futureTime ) select = true;
-    //       return [curr, select];
-    //     }),
-    //     filter( ([ _, select ]) => !!select ),
-    //     map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
-    //   ) );
+    setTimeout( () => (this.segments.push(undefined), this.cdr.detectChanges()), 7000 );
 
     this.segments = Array( 1 );
     this._object = new Group;
