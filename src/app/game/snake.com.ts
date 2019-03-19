@@ -83,8 +83,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Output() position$Change = new EventEmitter<Observable<any>>();
 
   @Input() apple$: Observable<any>;
+  private appleOnce$: Observable<any>;
 
-  @Input() eatenApples: Vector3[] = [];
   @Input() renderer: any;
 
   get lookAtPosition(){ return  this.cubes.first ? this.cubes.first.lookAt : vZero; }
@@ -135,6 +135,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
     const keyFrameDirection$ = keyFrameLoop$.pipe( combineLatest( this.directionOnce$ ), share() );
     let cubeLoopsSub: Subscription;
+    let appleQueue = [];
     this.cubes.changes.subscribe( cubes =>
     {
       // camera -> head
@@ -145,21 +146,49 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         const l = keyFrameDirection$.pipe( snakeDelay( _.currentIndex ) );
         (l as any).__id = Math.random();
         this.cubeLoops.push( l );
-        this.cdr.detectChanges();
         this.addChild( _.item.object );
+        this.cdr.detectChanges();
         if ( cubeLoopsSub ) cubeLoopsSub.unsubscribe();
-        cubeLoopsSub = of(true).pipe
+
+        let lastCubePosition: Vector3;
+        if ( _.currentIndex > 0 )
+          lastCubePosition = this.cubes.toArray()[_.currentIndex - 1].object.position.clone();
+
+        //
+        cubeLoopsSub = keyFrameLoop$.pipe
         (
-          withLatestFrom( a ),
+          combineLatest( this.appleOnce$ ),
+          scan<any, any>( ( [prev], [curr, apple] ) =>
+          {
+            if ( apple ) appleQueue.push( this.segments.length - 1 );
+            if ( prev.futureTime !== curr.futureTime )
+            {
+              if ( lastCubePosition )
+              {
+                this.cubes.last.object.position.copy( lastCubePosition );
+                lastCubePosition = undefined;
+              }
+              appleQueue = appleQueue.reduceRight( (acc, val) =>
+              ( --val >= 0
+                ? [val]
+                : (
+                    this.segments.push(undefined),
+                    this.cdr.detectChanges(),
+                    []
+                  )
+              ).concat(acc), [] );
+            }
+            return [curr, apple];
+          }),
           mergeOperator( ...this.cubeLoops )
-        ).subscribe();
+        ).subscribe( );
       } );
 
     } );
 
     const keyFramePosition$ = keyFrameLoop$.pipe
       (
-        scan<any, any>( ( [prev], [curr] ) =>
+        scan<any, any>( ( prev, curr ) =>
         {
           let select = false;
           if ( prev.futureTime !== curr.futureTime ) select = true;
@@ -170,40 +199,17 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     );
     this.position$Change.emit( keyFramePosition$ );
 
-    const a = new Subject,
-      appleOnce$ = a.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) );
-    let appleQueue = [];
-
-    keyFrameLoop$.pipe(
-      combineLatest( appleOnce$ ),
-      scan<any, any>( ( [prev], [curr, apple] ) =>
-      {
-        if ( apple ) appleQueue.push( this.length );
-        if ( prev.futureTime !== curr.futureTime )
-          appleQueue = appleQueue.reduceRight( (acc, val) => ( --val >= 0 ? [val] : ( this.segments.push(undefined), this.cdr.detectChanges(), [] ) ).concat(acc), [] );
-        console.log( appleQueue );
-        return [curr, apple];
-      })
-    ).subscribe( );
-
-    // this.subLoop$ = this._subLoop$.pipe
-    // (
-    //   combineLatest
-    //   (
-    //     this.direction$.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) )
-    //   ),
-    //   share(),
-    // );
-    setTimeout( () => a.next(true), 3000 );
-    // setTimeout( () => (this.segments.push(undefined), this.cdr.detectChanges()), 7000 );
-
-    this.segments = Array( 1 );
     this._object = new Group;
     super.ngAfterViewInit();
 
   }
   ngOnChanges( changes: SimpleChanges )
   {
+    if ( this.apple$ )
+    {
+      this.appleOnce$ = this.apple$.pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) );
+      this.segments = Array( 1 ).fill( undefined );
+    }
   }
 
   updateCamera( quaternion ) {

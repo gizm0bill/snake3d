@@ -128,7 +128,6 @@ export class MainCom implements OnDestroy, AfterViewInit
     while ( snakePositions.find( pos => !!pos.round().equals( newPos ) ) );
     return newPos;
   }
-  eatenApples = [];
   snakePosition$: Observable<[ Vector3[], { time: number, delta: number, futureTime: number} ]>;
   apple$: Observable<any>;
   ngAfterViewInit()
