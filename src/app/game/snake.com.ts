@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
 import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty, Subscription } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, } from 'rxjs/operators';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, last, } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -141,7 +141,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       {
         if ( prev.futureTime !== curr.futureTime )
         {
-          if ( holdDir ) directions.push( { dir: holdDir, exhaust: Array(this.length).fill(undefined).map( (_, i) => i ) } );
+          if ( holdDir ) directions.push( { dir: holdDir, exhaust: Array(this.segments.length).fill(undefined).map( (_, i) => i ) } );
           return [curr, undefined];
         }
         holdDir = holdDir || dir;
@@ -168,11 +168,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           {
             for ( const direction of directions )
             {
-              direction.exhaust = direction.exhaust.map( e =>
-              {
-                if ( --e < 0 ) returnDirection = direction.dir;
-                return e;
-              });
+              --direction.exhaust[keyFrames];
+              if ( direction.exhaust[keyFrames] === -1 ) returnDirection = direction.dir;
             }
             console.log( directions );
           }
@@ -191,6 +188,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       console.log('cubeLoops', this._cubeLoops);
       this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
       {
+        directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length -1 ] + 1 ) );
         const l = keyFrameDirection$.pipe( snakeDelay_( _.currentIndex ) );
         (l as any).__id = Math.random();
         this.cubeLoops.push( l );
@@ -198,9 +196,14 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         this.cdr.detectChanges();
         if ( cubeLoopsSub ) cubeLoopsSub.unsubscribe();
 
-        let lastCubePosition: Vector3;
+        let lastCubePosition: Vector3,
+            lastCubeQuaternion: Quaternion;
         if ( _.currentIndex > 0 )
-          lastCubePosition = this.cubes.toArray()[_.currentIndex - 1].object.position.clone();
+        {
+          const lastCube = this.cubes.toArray()[ _.currentIndex - 1 ].object;
+          lastCubePosition = lastCube.position.clone();
+          lastCubeQuaternion = lastCube.quaternion.clone();
+        }
 
         //
         cubeLoopsSub = keyFrameLoop$.pipe
@@ -214,7 +217,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
               if ( lastCubePosition )
               {
                 this.cubes.last.object.position.copy( lastCubePosition );
-                lastCubePosition = undefined;
+                this.cubes.last.object.quaternion.copy( lastCubeQuaternion );
+                [ lastCubePosition, lastCubeQuaternion ] = [ undefined, undefined ];
               }
               appleQueue = appleQueue.reduceRight( (acc, val) =>
               ( --val >= 0
