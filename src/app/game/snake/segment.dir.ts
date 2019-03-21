@@ -139,7 +139,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       {
         if ( futureTime !== prevFutureTime )
         {
-          console.log( this.index );
           // debugger;
           if ( endDirection ) // end rotation
           {

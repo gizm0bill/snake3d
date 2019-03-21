@@ -133,7 +133,55 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       }, { futureTime: performance.now() + this.speed } ),
     );
 
-    const keyFrameDirection$ = keyFrameLoop$.pipe( combineLatest( this.directionOnce$ ), share() );
+    const directions = [];
+    const keyFrameDirection$ = keyFrameLoop$.pipe
+    (
+      combineLatest( this.directionOnce$ ),
+      scan( ([prev, holdDir], [curr, dir]) =>
+      {
+        if ( prev.futureTime !== curr.futureTime )
+        {
+          if ( holdDir ) directions.push( { dir: holdDir, exhaust: Array(this.length).fill(undefined).map( (_, i) => i ) } );
+          return [curr, undefined];
+        }
+        holdDir = holdDir || dir;
+        return [curr, holdDir];
+      }),
+      share(),
+      // filter( ([ _, __, dir ]) => !!dir ),
+      // map( ([ time, _, dir ]) => [ time, dir ] ),
+    );
+
+    const snakeDelay_ = ( keyFrames: number, tag?: string ) => (source: AnonymousSubject<any>) => defer( () =>
+    {
+      return source.pipe
+      (
+        scan<any, any>
+        ((
+          [ { futureTime: prevFutureTime } ],
+          [ { futureTime, delta, time } ]
+        ) =>
+        {
+          let returnDirection: DirectionCommand;
+          console.log( prevFutureTime !== futureTime );
+          if ( prevFutureTime !== futureTime )
+          {
+            for ( const direction of directions )
+            {
+              direction.exhaust = direction.exhaust.map( e =>
+              {
+                if ( --e < 0 ) returnDirection = direction.dir;
+                return e;
+              });
+            }
+            console.log( directions );
+          }
+          return [ { futureTime, delta, time }, returnDirection, tag ];
+        }, [{ futureTime: performance.now() }] )
+      );
+    });
+
+
     let cubeLoopsSub: Subscription;
     let appleQueue = [];
     this.cubes.changes.subscribe( cubes =>
@@ -143,7 +191,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       console.log('cubeLoops', this._cubeLoops);
       this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
       {
-        const l = keyFrameDirection$.pipe( snakeDelay( _.currentIndex ) );
+        const l = keyFrameDirection$.pipe( snakeDelay_( _.currentIndex ) );
         (l as any).__id = Math.random();
         this.cubeLoops.push( l );
         this.addChild( _.item.object );
