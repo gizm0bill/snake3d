@@ -137,7 +137,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         [ { futureTime, delta, time }, currentDirection ]
       ) =>
       {
-        if ( this.index === 0 ) { console.log( endDirection, futureTime !== prevFutureTime ); }
+
         if ( futureTime !== prevFutureTime )
         {
           // debugger;
@@ -168,7 +168,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);
           this.cube.updateMatrixWorld(true);
-
         }
         if ( !!endDirection )
         {

@@ -68,7 +68,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 3;
   snakeSize = 2;
-  snakeSpeed = 2000;
+  snakeSpeed = 1000;
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );

@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
 import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty, Subscription } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, last, } from 'rxjs/operators';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, last, mergeMap, } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -148,11 +148,9 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         return [curr, holdDir];
       }),
       share(),
-      // filter( ([ _, __, dir ]) => !!dir ),
-      // map( ([ time, _, dir ]) => [ time, dir ] ),
     );
 
-    const snakeDelay_ = ( keyFrames: number, tag?: string ) => (source: AnonymousSubject<any>) => defer( () =>
+    const snakeDelay_ = ( index: number, tag?: string ) => (source: AnonymousSubject<any>) => defer( () =>
     {
       return source.pipe
       (
@@ -163,12 +161,13 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         ) =>
         {
           let returnDirection: DirectionCommand;
+          console.log( prevFutureTime !== futureTime );
           if ( prevFutureTime !== futureTime )
           {
             for ( const direction of directions )
             {
-              --direction.exhaust[keyFrames];
-              if ( direction.exhaust[keyFrames] === -1 ) returnDirection = direction.dir;
+              --direction.exhaust[index];
+              if ( direction.exhaust[index] === -1 ) returnDirection = direction.dir;
             }
             console.log( directions );
           }
@@ -176,7 +175,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         }, [{ futureTime: performance.now() }] )
       );
     });
-
 
     let cubeLoopsSub: Subscription;
     let appleQueue = [];
@@ -193,7 +191,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         this.cubeLoops.push( l );
         this.addChild( _.item.object );
         this.cdr.detectChanges();
-        if ( cubeLoopsSub ) cubeLoopsSub.unsubscribe();
+        // if ( cubeLoopsSub ) cubeLoopsSub.unsubscribe();
 
         let lastCubePosition: Vector3,
             lastCubeQuaternion: Quaternion;
@@ -231,10 +229,9 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             }
             return [curr, apple];
           }),
-          mergeOperator( ...this.cubeLoops )
+          mergeOperator( this.cubeLoops[ this.cubeLoops.length - 1 ] )
         ).subscribe( );
       } );
-
     } );
 
     const keyFramePosition$ = keyFrameLoop$.pipe
@@ -251,10 +248,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.position$Change.emit( keyFramePosition$ );
 
     this._object = new Group;
-
-    timer( this.speed * 4.5, animationFrameScheduler ).pipe( tap( _ => this.direction.next( DirectionCommand.LEFT ) ) ).subscribe();
-
     super.ngAfterViewInit();
+
   }
   ngOnChanges( changes: SimpleChanges )
   {
