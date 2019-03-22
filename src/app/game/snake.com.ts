@@ -163,7 +163,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         ) =>
         {
           let returnDirection: DirectionCommand;
-          console.log( prevFutureTime !== futureTime );
           if ( prevFutureTime !== futureTime )
           {
             for ( const direction of directions )
@@ -252,8 +251,10 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.position$Change.emit( keyFramePosition$ );
 
     this._object = new Group;
-    super.ngAfterViewInit();
 
+    timer( this.speed * 4.5, animationFrameScheduler ).pipe( tap( _ => this.direction.next( DirectionCommand.LEFT ) ) ).subscribe();
+
+    super.ngAfterViewInit();
   }
   ngOnChanges( changes: SimpleChanges )
   {
