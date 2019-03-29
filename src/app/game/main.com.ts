@@ -107,7 +107,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
   private newLoop()
   {
-    return timer( 0, 1000 / 6, animationFrameScheduler ).pipe
+    return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {

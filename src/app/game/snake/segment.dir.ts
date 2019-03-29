@@ -73,7 +73,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
   private setupHelpers()
   {
-    if ( this.dev || !environment.production )
+    if ( false ) // this.dev || !environment.production )
     {
       const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
       const wireGeom = new WireframeGeometry( wireBoxGeom );
@@ -137,7 +137,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         [ { futureTime, delta, time }, currentDirection ]
       ) =>
       {
-
         if ( futureTime !== prevFutureTime )
         {
           // debugger;
@@ -163,7 +162,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
             this.rotation$.emit( this.outerBox.quaternion );
             // startDirection = undefined;
           }
-          // console.log( '-----', this.outerBox.position.toArray().join() );
           this.outerBox.translateZ( this.size );
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);

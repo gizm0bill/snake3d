@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
 import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty, Subscription } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, last, mergeMap, expand, } from 'rxjs/operators';
+import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, last, mergeMap, expand, distinctUntilChanged, switchMapTo, switchAll, mergeAll, } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -104,7 +104,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   {
     set: function(target, property, value, receiver) {
       target[property] = value;
-      console.log( 'Set %s to %o', property, value);
+      // console.log( 'Set %s to %o', property, value);
       return true;
     }
   });
@@ -132,6 +132,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         }
         return current;
       }, { futureTime: performance.now() + this.speed } ),
+      share(),
     );
 
     const directions = [];
@@ -162,87 +163,31 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         ) =>
         {
           let returnDirection: DirectionCommand;
-          console.log( prevFutureTime !== futureTime );
           if ( prevFutureTime !== futureTime )
           {
             for ( const direction of directions )
             {
+              // TODO
               --direction.exhaust[index];
               if ( direction.exhaust[index] === -1 ) returnDirection = direction.dir;
             }
-            console.log( directions );
           }
           return [ { futureTime, delta, time }, returnDirection, tag ];
         }, [{ futureTime: performance.now() }] )
       );
     });
 
-    let cubeLoopsSub: Subscription;
-    let appleQueue = [];
     this.cubes.changes.subscribe( cubes =>
     {
       // camera -> head
       if ( this.cubes.first && this.camera ) this.cubes.first.cube.add( this.camera.camera );
-      console.log('cubeLoops', this._cubeLoops);
       this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
       {
         directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length -1 ] + 1 ) );
         const l = keyFrameDirection$.pipe( snakeDelay_( _.currentIndex ) );
         this.cubeLoops.push( l );
         this.addChild( _.item.object );
-
-        if ( _.currentIndex > 0 )
-        {
-          const lastCube = this.cubes.toArray()[ _.currentIndex - 1 ].object;
-          this.lastCubePosition.next( [ lastCube.position.clone(), lastCube.quaternion.clone() ] );
-        }
-
         this.cdr.detectChanges();
-        // if ( cubeLoopsSub ) cubeLoopsSub.unsubscribe();
-
-        // let lastCubePosition: Vector3,
-        //     lastCubeQuaternion: Quaternion;
-        // if ( _.currentIndex > 0 )
-        // {
-        //   const lastCube = this.cubes.toArray()[ _.currentIndex - 1 ].object;
-        //   lastCubePosition = lastCube.position.clone();
-        //   lastCubeQuaternion = lastCube.quaternion.clone();
-        // }
-
-        //
-        // cubeLoopsSub = keyFrameLoop$.pipe
-        // (
-        //   combineLatest( this.appleOnce$ ),
-        //   scan<any, any>( ( [prev], [curr, apple] ) =>
-        //   {
-        //     if ( apple ) appleQueue.push( this.segments.length - 1 );
-        //     if ( prev.futureTime !== curr.futureTime )
-        //     {
-        //       if ( lastCubePosition )
-        //       {
-        //         this.cubes.last.object.position.copy( lastCubePosition );
-        //         this.cubes.last.object.quaternion.copy( lastCubeQuaternion );
-        //         [ lastCubePosition, lastCubeQuaternion ] = [ undefined, undefined ];
-        //       }
-        //       appleQueue = appleQueue.reduceRight( (acc, val) =>
-        //       ( --val >= 0
-        //         ? [val]
-        //         : (
-        //             this.segments.push(undefined),
-        //             this.cdr.detectChanges(),
-        //             []
-        //           )
-        //       ).concat(acc), [] );
-        //     }
-        //     return [curr, apple];
-        //   }),
-        //   expand( _ =>
-        //   {
-        //     debugger;
-        //     return of( true );
-        //   })
-        //   // mergeOperator( this.cubeLoops[ this.cubeLoops.length - 1 ] )
-        // ).subscribe( );
       } );
     } );
 
@@ -264,7 +209,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   }
 
-  lastCubePosition = new Subject;
   ngOnChanges( changes: SimpleChanges )
   {
     if ( this.apple$ )
@@ -273,37 +217,36 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       this.segments = Array( 1 ).fill( undefined );
 
       const empty$ = empty();
-      const lastCubePosition$ = this.lastCubePosition.asObservable().pipe( startWith( undefined ) );
       const cubeLoop$ = this.keyFrameLoop$.pipe
       (
         combineLatest( this.appleOnce$ ),
         scan<any, any>( ( [ prev, appleQue, lastCubePos ], [ curr, apple ] ) =>
         {
+          console.log('...');
           if ( apple ) appleQue.push( this.segments.length - 1 );
+          if ( lastCubePos )
+          {
+            this.cubes.last.object.position.copy( lastCubePos[0] );
+            this.cubes.last.object.quaternion.copy( lastCubePos[1] );
+            lastCubePos = undefined;
+          }
           if ( prev.futureTime !== curr.futureTime )
           {
-            if ( lastCubePos ) {
-              this.cubes.last.object.position.copy( lastCubePos[0] );
-              this.cubes.last.object.quaternion.copy( lastCubePos[1] );
-              lastCubePos = undefined;
-            }
-            appleQue = appleQue.reduceRight( (acc, val) => {
-              if ( --val >= 0 ) {
-                return [val].concat(acc);
-              }
+            appleQue = appleQue.reduceRight( (acc, val) =>
+            {
+              if ( --val >= 0 ) return [val].concat(acc);
               this.segments.push(undefined);
-              const lastCube = this.cubes.toArray()[ this.cubes.length - 1 ].object;
-              lastCubePos = [ lastCube.position.clone(), lastCube.quaternion.clone() ];
+              const lastCube = this.cubes.last.object;
+              lastCubePos = [ lastCube.position.clone(), lastCube.quaternion.clone(), lastCube ];
               this.cdr.detectChanges();
               return [].concat(acc);
             }, [] );
           }
           return [ curr, appleQue, lastCubePos ];
         }, [ { futureTime: undefined }, [], undefined ] ),
-        mergeMap( _ => {
-          const lastLoop = this.cubeLoops[ this.cubeLoops.length - 1 ];
-          return lastLoop.__subscribed ? empty$ : ( lastLoop.__subscribed = true, lastLoop );
-        })
+        map( _ => this.cubeLoops[ this.cubeLoops.length - 1 ] ),
+        distinctUntilChanged(),
+        mergeAll(),
       );
       cubeLoop$.subscribe();
     }
