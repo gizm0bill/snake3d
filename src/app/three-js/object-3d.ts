@@ -45,7 +45,7 @@ export abstract class AObject3D<T extends Object3D> implements AfterViewInit
   protected _object: T;
   get object(): T { return this._object; }
 
-  protected addChild(object: Object3D): T { console.log(object); return this._object.add(object); }
+  protected addChild(object: Object3D): T { return this._object.add(object); }
 
   ngAfterViewInit(): void
   {

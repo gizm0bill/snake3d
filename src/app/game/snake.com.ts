@@ -1,51 +1,13 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
-  forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, SimpleChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
-import { Subject, Observable, never, interval, of, defer, animationFrameScheduler, timer, zip, merge, empty, Subscription } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, take, throttleTime, tap, filter, withLatestFrom, merge as mergeOperator, last, mergeMap, expand, distinctUntilChanged, switchMapTo, switchAll, mergeAll, } from 'rxjs/operators';
+  forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
+import { Subject, Observable, never, of, defer } from 'rxjs';
+import { scan, share, startWith, switchMap, combineLatest, map, filter, distinctUntilChanged, mergeAll, } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
 import { ACamera } from '../three-js/camera';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
 import { AnonymousSubject } from 'rxjs/internal/Subject';
-
-const dirs = {};
-let currentExhausts;
-const snakeDelay = ( keyFrames: number, tag?: string ) => (source: AnonymousSubject<any>) => defer( () =>
-{
-  const dirExhausts = {};
-  if ( currentExhausts )
-    for ( const i in currentExhausts ) if ( currentExhausts.hasOwnProperty(i) )
-      dirExhausts[i] = currentExhausts[i] + 1;
-  currentExhausts = dirExhausts;
-  return source.pipe
-  (
-    scan<any, any>
-    ((
-      [ { futureTime: prevFutureTime } ],
-      [ { futureTime, delta, time }, currentDirection ]
-    ) =>
-    {
-      if ( !!currentDirection )
-      {
-        dirs[ futureTime ] = currentDirection;
-        // dirs.push( currentDirection );
-        dirExhausts[ futureTime ] = keyFrames;
-      }
-      let retDirection: DirectionCommand;
-      if ( prevFutureTime !== futureTime )
-      {
-        // dirExhausts = dirExhausts.reduceRight( (acc, val) => ( --val >= 0 ? [val] : ( retDirection = dirs.shift(), [] ) ).concat(acc), [] );
-        for ( const i in dirs ) if ( dirs.hasOwnProperty(i) ) {
-          if ( !dirExhausts[i] ) dirExhausts[i] = 0;
-          dirExhausts[i]--;
-          if ( dirExhausts[i] === -1 ) retDirection = dirs[i];
-        }
-      }
-      return [ { futureTime, delta, time }, retDirection, tag ];
-    } )
-  );
-});
 
 const dkd = 'document:keydown.';
 @Component
@@ -192,15 +154,18 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     } );
 
     const keyFramePosition$ = this.keyFrameLoop$.pipe
-      (
-        scan<any, any>( ( prev, curr ) =>
-        {
-          let select = false;
-          if ( prev.futureTime !== curr.futureTime ) select = true;
-          return [curr, select];
-        }),
-        filter( ([ _, select ]) => !!select ),
-        map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
+    (
+      scan<any, any>( ( [ prev ], curr ) =>
+      {
+        console.log('position');
+        let select = false;
+        if ( prev.futureTime !== curr.futureTime ) {
+          select = true;
+        }
+        return [ curr, select ];
+      }, [ { futureTime: null } ] ),
+      filter( ([ _, select ]) => !!select ),
+      map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
     );
     this.position$Change.emit( keyFramePosition$ );
 
@@ -209,20 +174,19 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   }
 
-  ngOnChanges( changes: SimpleChanges )
+  ngOnChanges( )
   {
     if ( this.apple$ )
     {
       this.appleOnce$ = this.apple$.pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) );
       this.segments = Array( 1 ).fill( undefined );
 
-      const empty$ = empty();
       const cubeLoop$ = this.keyFrameLoop$.pipe
       (
         combineLatest( this.appleOnce$ ),
         scan<any, any>( ( [ prev, appleQue, lastCubePos ], [ curr, apple ] ) =>
         {
-          console.log('...');
+          console.log('apple');
           if ( apple ) appleQue.push( this.segments.length - 1 );
           if ( lastCubePos )
           {
@@ -252,7 +216,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     }
   }
 
-  updateCamera( quaternion ) {
+  updateCamera( quaternion: Quaternion )
+  {
     this.camera.camera.up.copy( vY ).applyQuaternion( quaternion ).normalize();
   }
 
