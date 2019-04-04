@@ -68,7 +68,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 3;
   snakeSize = 2;
-  snakeSpeed = 2000;
+  snakeSpeed = 700;
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
   private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
@@ -107,7 +107,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
   private newLoop()
   {
-    return timer( 0, 1000 / 6, animationFrameScheduler ).pipe
+    return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {
@@ -135,8 +135,11 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.apple$ = this.snakePosition$.pipe
     (
       // tap( ( ...args: any[] ) => { console.log(args); } ),
-      filter( ([ [ snakePosition ] ]) => this.applePosition.value.equals( snakePosition ) ),
-      map( ([ [ snakePosition ] ]) => { console.log( '...', snakePosition ); return snakePosition; } ),
+      filter( ([ [ snakePosition ] ]) => {
+        console.log( this.applePosition.value, snakePosition );
+        return this.applePosition.value.equals( snakePosition );
+      } ),
+      map( ([ [ snakePosition ] ]) => { return snakePosition.clone(); } ),
       tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 2 ) ) ) ),
       // {
         // if ( this.applePosition.value.equals( snakePosition ) )
