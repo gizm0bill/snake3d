@@ -148,6 +148,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length - 1 ] + 1 ) );
         const l = keyFrameDirection$.pipe( snakeDelay_( _.currentIndex ) );
         this.cubeLoops.push( l );
+        this.speed -= 25;
         this.addChild( _.item.object );
         this.cdr.detectChanges();
       } );
