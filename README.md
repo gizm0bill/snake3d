@@ -1,4 +1,4 @@
-# Snake3d
+# Snake3d - W.I.P.
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 7.1.4.
 
