@@ -81,7 +81,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         if ( current.time > previous.futureTime  )
         {
           const dt = current.time - current.futureTime;
-          if ( dt > this.speed )
+          if ( dt > this.speed ) // frame drop mitigation?
           {
             current.delta = 16.66;
             current.futureTime = current.time + current.delta;
