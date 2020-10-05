@@ -5,7 +5,7 @@ import { environment } from 'src/environments/environment';
 const routes: Routes =
 [
   { path: '', redirectTo: 'game', pathMatch: 'full' },
-  { path: 'game', loadChildren: './game#GameMod' }
+  { path: 'game', loadChildren: () => import('./game').then(m => m.GameMod) }
 ];
 
 @NgModule

@@ -13,8 +13,8 @@ import { AObject3D, SphereBufferGeometryDir, MeshDir, MeshPhongMaterialDir } fro
 })
 export class AppleCom extends MeshDir implements OnChanges
 {
-  @ViewChild(SphereBufferGeometryDir) geometry: SphereBufferGeometryDir;
-  @ViewChild(MeshPhongMaterialDir) material: MeshPhongMaterialDir;
+  @ViewChild(SphereBufferGeometryDir, { static: true }) geometry: SphereBufferGeometryDir;
+  @ViewChild(MeshPhongMaterialDir, { static: true }) material: MeshPhongMaterialDir;
 
   ngOnChanges( { position }: { position: SimpleChange } ) {
     try { this.object.position.copy( position.currentValue ); } catch ( e ) {};

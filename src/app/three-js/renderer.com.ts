@@ -24,7 +24,7 @@ export class RendererCom implements AfterViewInit
 
   constructor() { this.render = this.render.bind(this); }
 
-  @ViewChild('canvas') canvasRef: ElementRef;
+  @ViewChild('canvas', { static: true }) canvasRef: ElementRef;
   get canvas(): HTMLCanvasElement { return this.canvasRef.nativeElement; }
 
   @ContentChildren(SceneDir) sceneComponents: QueryList<SceneDir>;

@@ -33,10 +33,10 @@ const dirs =
 })
 export class MainCom implements OnDestroy, AfterViewInit
 {
-  @ViewChild(RendererCom) childRenderer: RendererCom;
-  @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
-  @ViewChild(SnakeCom) snake: SnakeCom;
-  @ViewChild(AppleCom) apple: AppleCom;
+  @ViewChild(RendererCom, { static: false }) childRenderer: RendererCom;
+  @ViewChild(PerspectiveCameraDir, { static: false }) camera: PerspectiveCameraDir;
+  @ViewChild(SnakeCom, { static: false }) snake: SnakeCom;
+  @ViewChild(AppleCom, { static: false }) apple: AppleCom;
 
 
   constructor

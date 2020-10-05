@@ -14,9 +14,9 @@ import { SkinnedMesh, MeshBasicMaterial } from 'three';
 })
 export class SkinnedMeshDir extends AObject3D<SkinnedMesh> implements AfterViewInit
 {
-  @ContentChild(AGeometry) geometry: AGeometry<any>;
-  @ContentChild(AMaterial) material: AMaterial<any>;
-  @ContentChild(SkeletonDir) skeleton: SkeletonDir;
+  @ContentChild(AGeometry, /* TODO: add static flag */ {}) geometry: AGeometry<any>;
+  @ContentChild(AMaterial, /* TODO: add static flag */ {}) material: AMaterial<any>;
+  @ContentChild(SkeletonDir, /* TODO: add static flag */ {}) skeleton: SkeletonDir;
 
   ngAfterViewInit()
   {
