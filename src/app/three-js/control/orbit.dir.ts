@@ -1,14 +1,13 @@
 import { Directive, Input, AfterViewInit, OnDestroy, ContentChildren, QueryList } from '@angular/core';
-import * as THREE from 'three';
 import { PerspectiveCameraDir } from '../camera';
 import { RendererCom } from '../renderer.com';
-import 'three/examples/js/controls/OrbitControls';
-import { OrbitControls } from 'three';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/js/controls/OrbitControls';
 
 @Directive
-({
+( {
   selector: 'three-orbit-controls'
-})
+} )
 export class OrbitControlsDir implements AfterViewInit, OnDestroy
 {
 
@@ -34,7 +33,7 @@ export class OrbitControlsDir implements AfterViewInit, OnDestroy
       throw new Error('Renderer is not found');
     }
 
-    this.controls = new THREE.OrbitControls(this.childCameras.first.camera);
+    this.controls = new OrbitControls(this.childCameras.first.camera);
     this.controls.rotateSpeed = this.rotateSpeed;
     this.controls.zoomSpeed = this.zoomSpeed;
     this.controls.addEventListener('change', this.childRenderers.first.render);
