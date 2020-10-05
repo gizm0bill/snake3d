@@ -24,8 +24,8 @@
     "ng-cli-pug-loader": "^0.1.7",
     "rxjs": "~6.6.3",
     "three": "^0.100.0",
-    "tslib": "^1.13.0",
-    "zone.js": "~0.10.3"
+    "tslib": "^1.10.0",
+    "zone.js": "~0.10.2"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "~0.901.12",
@@ -35,10 +35,10 @@
     "@angular/language-service": "~9.1.12",
     "@types/jasmine": "~2.8.8",
     "@types/jasminewd2": "~2.0.3",
-    "@types/node": "~8.9.4",
+    "@types/node": "^12.11.1",
     "@types/three": "^0.93.16",
     "apply-loader": "^2.0.0",
-    "codelyzer": "^5.0.1",
+    "codelyzer": "^5.1.2",
     "jasmine-core": "~2.99.1",
     "jasmine-spec-reporter": "~4.2.1",
     "karma": "~3.1.1",
