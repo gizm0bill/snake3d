@@ -80,7 +80,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         if ( current.time > previous.futureTime  )
         {
           const dt = current.time - current.futureTime;
-          if ( dt > this.speed )
+          if ( dt > this.speed ) // frame drop mitigation?
           {
             current.delta = 16.66;
             current.futureTime = current.time + current.delta;
@@ -147,6 +147,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length - 1 ] + 1 ) );
         const l = keyFrameDirection$.pipe( snakeDelay_( _.currentIndex ) );
         this.cubeLoops.push( l );
+        this.speed -= 25;
         this.addChild( _.item.object );
         this.cdr.detectChanges();
       } );

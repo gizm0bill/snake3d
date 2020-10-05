@@ -73,7 +73,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
   private setupHelpers()
   {
-    if ( false ) // this.dev || !environment.production )
+    if ( this.dev || !environment.production )
     {
       const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
       const wireGeom = new WireframeGeometry( wireBoxGeom );
