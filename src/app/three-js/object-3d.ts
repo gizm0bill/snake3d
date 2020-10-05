@@ -1,4 +1,4 @@
-import { AfterViewInit, Input, QueryList, ContentChildren } from '@angular/core';
+import { AfterViewInit, Input, QueryList, ContentChildren, Directive } from '@angular/core';
 import { Object3D, Vector3, Euler } from 'three';
 
 const typeCheckVectorSetter = function( what: string, value: any )
@@ -19,6 +19,7 @@ const typeCheckVectorSetter = function( what: string, value: any )
   this[what] = new Vector3( x, y, z );
 };
 
+@Directive()
 export abstract class AObject3D<T extends Object3D> implements AfterViewInit
 {
   @ContentChildren( AObject3D, { descendants: true } ) childNodes: QueryList<AObject3D<any>>;
