@@ -10,8 +10,8 @@ import
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
 import { Vector3, Spherical } from 'three';
-import { interval, animationFrameScheduler, Subject, zip, range, from, BehaviorSubject, timer, empty, of, Observable } from 'rxjs';
-import { scan, tap, withLatestFrom, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';
+import { interval, animationFrameScheduler, Subject, zip, range, BehaviorSubject, timer, Observable, EMPTY } from 'rxjs';
+import { scan, tap, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
@@ -71,7 +71,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   snakeSpeed = 700;
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
-  private seconds$ = zip( range(0, 60), interval( 1000 ), i => i + 1 ).pipe( repeat(),  );
+  public seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
 
   @HostListener( 'window:resize', ['$event'] )
   onWindowResize( event: any ) {
@@ -101,7 +101,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
 
 
-  pauseResume$ = new BehaviorSubject<boolean>(false).pipe( scan( p => !p, false ) );
+  pauseResume$ = new BehaviorSubject<boolean>(false)
   ngOnDestroy()
   {
   }
@@ -117,7 +117,7 @@ export class MainCom implements OnDestroy, AfterViewInit
       share()
     );
   }
-  loop$ = this.pauseResume$.pipe( switchMap( resume => resume ? this.newLoop() : empty() ) );
+  loop$ = this.pauseResume$.pipe( scan( p => !p, false ), switchMap( resume => resume ? this.newLoop() : EMPTY ) );
 
   gridSize = 5;
   private randomApplePosition( snakePositions: Vector3[] )

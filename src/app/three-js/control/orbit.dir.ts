@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { PerspectiveCameraDir } from '../camera';
 import { RendererCom } from '../renderer.com';
 import 'three/examples/js/controls/OrbitControls';
+import { OrbitControls } from 'three';
 
 @Directive
 ({
@@ -17,7 +18,7 @@ export class OrbitControlsDir implements AfterViewInit, OnDestroy
   @Input() rotateSpeed = 1.0;
   @Input() zoomSpeed = 1.2;
 
-  controls: THREE.OrbitControls;
+  controls: OrbitControls;
 
   constructor() {
     console.log('OrbitControlsDir.constructor');

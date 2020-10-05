@@ -30,7 +30,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   // initial length
   @Input() length = 3;
 
-  @Input() position = vZero.clone();
   @Output() positionChange = new EventEmitter<Vector3[]>();
   segments: Array<Vector3>;
   @Input() behavior$: Observable<any> = never();
