@@ -33,7 +33,7 @@ export class OrbitControlsDir implements AfterViewInit, OnDestroy
       throw new Error('Renderer is not found');
     }
 
-    this.controls = new OrbitControls(this.childCameras.first.camera);
+    this.controls = new OrbitControls(this.childCameras.first.object);
     this.controls.rotateSpeed = this.rotateSpeed;
     this.controls.zoomSpeed = this.zoomSpeed;
     this.controls.addEventListener('change', this.childRenderers.first.render);

@@ -1,10 +1,11 @@
 import { NgModule } from '@angular/core';
-import { MeshLambertMaterialDir, MeshPhongMaterialDir, MeshBasicMaterialDir } from './mesh';
+import { MeshLambertMaterialDir, MeshPhongMaterialDir, MeshBasicMaterialDir, MeshStandardMaterialDir } from './mesh';
 const impex =
 [
   MeshLambertMaterialDir,
   MeshPhongMaterialDir,
   MeshBasicMaterialDir,
+  MeshStandardMaterialDir,
 ];
 @NgModule
 ({

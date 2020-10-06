@@ -11,8 +11,8 @@ import { AGeometry } from '../geometry';
 })
 export class MeshDir extends AObject3D<Mesh> implements AfterViewInit
 {
-  @ContentChild(AGeometry, /* TODO: add static flag */ {}) geometry: AGeometry<any>;
-  @ContentChild(AMaterial, /* TODO: add static flag */ {}) material: AMaterial<any>;
+  @ContentChild(AGeometry, { static: true } ) geometry: AGeometry<any>;
+  @ContentChild(AMaterial, { static: true } ) material: AMaterial<any>;
   ngAfterViewInit()
   {
     this._object = new Mesh

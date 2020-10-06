@@ -10,7 +10,7 @@ import { PerspectiveCamera } from 'three';
 })
 export class PerspectiveCameraDir extends ACamera<PerspectiveCamera> implements AfterViewInit, OnChanges
 {
-  camera: PerspectiveCamera;
+  object: PerspectiveCamera;
 
   @Input() fov: number;
   @Input() near: number;
@@ -22,26 +22,26 @@ export class PerspectiveCameraDir extends ACamera<PerspectiveCamera> implements 
 
   ngAfterViewInit(): void
   {
-    this.camera = new PerspectiveCamera( this.fov, undefined, this.near, this.far );
+    this.object = new PerspectiveCamera( this.fov, undefined, this.near, this.far );
     // Set position and look at
-    this.camera.position.x = this.positionX;
-    this.camera.position.y = this.positionY;
-    this.camera.position.z = this.positionZ;
-    this.camera.updateProjectionMatrix();
+    this.object.position.x = this.positionX;
+    this.object.position.y = this.positionY;
+    this.object.position.z = this.positionZ;
+    this.object.updateProjectionMatrix();
 
   }
   updateAspectRatio(aspect: number)
   {
-    this.camera.aspect = aspect;
-    this.camera.updateProjectionMatrix();
+    this.object.aspect = aspect;
+    this.object.updateProjectionMatrix();
   }
 
   ngOnChanges( changes: SimpleChanges )
   {
     if ( changes.fov && changes.fov.currentValue && !changes.fov.firstChange )
     {
-      this.camera.fov = changes.fov.currentValue;
-      this.camera.updateProjectionMatrix();
+      this.object.fov = changes.fov.currentValue;
+      this.object.updateProjectionMatrix();
     }
   }
 }

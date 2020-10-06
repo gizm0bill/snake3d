@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { MainCom } from './main.com';
 import { ThreeJsMod } from '../three-js';
 import { RoutingMod } from './routing.mod';
-import { BoxMaterialDir } from './box-material.dir';
 import { SnakeCom } from './snake.com';
 import { SnakeSegmentDir } from './snake';
 import { AppleCom } from './apple.com';
+import { BoxCom } from './box.com';
 
 @NgModule
 ({
@@ -16,7 +16,7 @@ import { AppleCom } from './apple.com';
     AppleCom,
     SnakeCom,
     SnakeSegmentDir,
-    BoxMaterialDir,
+    BoxCom,
   ],
   imports:
   [

@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
-import { Subject, Observable, never, of, defer } from 'rxjs';
-import { scan, share, startWith, switchMap, combineLatest, map, filter, distinctUntilChanged, mergeAll, tap, } from 'rxjs/operators';
+import { Subject, Observable, of, defer, combineLatest, NEVER } from 'rxjs';
+import { scan, share, startWith, switchMap, map, filter, distinctUntilChanged, mergeAll, tap } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ } from '../three-js';
 import { AObject3D } from '../three-js/object-3d';
@@ -20,19 +20,21 @@ const dkd = 'document:keydown.';
 export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChanges
 {
 
-  @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
   // attached camera
   @Input() camera: ACamera<any>;
   // initial speed
-  @Input() speed = 1000;
+  @Input() speed = 10000;
   // initial size
   @Input() size = 1;
   // initial length
   @Input() length = 3;
 
-  @Output() positionChange = new EventEmitter<Vector3[]>();
-  segments: Array<Vector3>;
-  @Input() behavior$: Observable<any> = never();
+  @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
+
+  cubePositions: Array<Vector3>;
+
+  // TODO: not used anymore?
+  @Input() behavior$: Observable<any> = NEVER;
   @Output() behavior$Change = new EventEmitter<Observable<any>>();
 
   @Input() loop$: Observable<{ time: number, delta: number}>;
@@ -40,7 +42,9 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   @Input() subLoop$: Observable<any>;
 
+  // TODO: not used
   @Input() position$: Observable<any>;
+  // Emit position to parent
   @Output() position$Change = new EventEmitter<Observable<any>>();
 
   @Input() apple$: Observable<any>;
@@ -69,6 +73,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       return true;
     }
   });
+  // keyframes loop based on speed
   keyFrameLoop$: Observable<any>;
   ngAfterViewInit()
   {
@@ -97,23 +102,23 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     );
 
     const directions = [];
-    const keyFrameDirection$ = this.keyFrameLoop$.pipe
+    const keyFrameDirection$ = combineLatest( [ this.keyFrameLoop$, this.directionOnce$ ] ) .pipe
     (
-      combineLatest( this.directionOnce$ ),
-      scan( ([prev, holdDir], [curr, dir]) =>
+      scan( ( [ previous, holdDirection ], [ current, direction ] ) =>
       {
-        if ( prev.futureTime !== curr.futureTime )
+        if ( previous.futureTime !== current.futureTime )
         {
-          if ( holdDir ) directions.push( { dir: holdDir, exhaust: Array(this.segments.length).fill(undefined).map( (_, i) => i ) } );
-          return [curr, undefined];
+          if ( holdDirection ) directions.push( { dir: holdDirection, exhaust: Array(this.cubePositions.length).fill(undefined).map( (_, i) => i ) } );
+          return [ current, undefined ];
         }
-        holdDir = holdDir || dir;
-        return [curr, holdDir];
+        holdDirection = holdDirection || direction;
+        return [ current, holdDirection ];
       }),
       share(),
     );
 
-    const snakeDelay_ = ( index: number, tag?: string ) => (source: AnonymousSubject<any>) => defer( () =>
+    // custom operator to delay each cube's direction
+    const snakeDelay = ( index: number, tag?: string ) => ( source: AnonymousSubject<any> ) => defer( () =>
     {
       return source.pipe
       (
@@ -128,7 +133,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           {
             for ( const direction of directions )
             {
-              // TODO
+              // TODO: remove > 0 items
               --direction.exhaust[index];
               if ( direction.exhaust[index] === -1 ) returnDirection = direction.dir;
             }
@@ -140,73 +145,72 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
     this.cubes.changes.subscribe( cubes =>
     {
-      // camera -> head
-      if ( this.cubes.first && this.camera ) this.cubes.first.cube.add( this.camera.camera );
+      // add camera to snake head
+      if ( this.cubes.first && this.camera ) this.cubes.first.cube.add( this.camera.object );
       this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
       {
         directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length - 1 ] + 1 ) );
-        const l = keyFrameDirection$.pipe( snakeDelay_( _.currentIndex ) );
+        const l = keyFrameDirection$.pipe( snakeDelay( _.currentIndex ) );
         this.cubeLoops.push( l );
-        this.speed -= 25;
+        // this.speed -= 25;
         this.addChild( _.item.object );
         this.cdr.detectChanges();
       } );
     } );
 
+    // position based on keyframe
     const keyFramePosition$ = this.keyFrameLoop$.pipe
     (
       scan<any, any>( ( [ prev ], curr ) =>
       {
         let select = false;
-        if ( prev.futureTime !== curr.futureTime ) {
-          select = true;
-        }
+        if ( prev.futureTime !== curr.futureTime ) select = true;
         return [ curr, select ];
       }, [ { futureTime: null } ] ),
-      filter( ([ _, select ]) => !!select ),
-      map( ([ timeData ]) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
+      filter( ( [ _, select ] ) => !!select ),
+      map( ( [ timeData ] ) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
+      share()
     );
     this.position$Change.emit( keyFramePosition$ );
 
     this._object = new Group;
     super.ngAfterViewInit();
-
   }
 
   ngOnChanges( )
   {
     if ( this.apple$ )
     {
-      this.appleOnce$ = this.apple$.pipe( startWith( undefined ) );
-      this.segments = Array( 1 ).fill( undefined );
+      this.appleOnce$ = this.apple$.pipe( startWith( null as any ) );
+      this.cubePositions = Array( 1 ).fill( undefined );
 
-      const cubeLoop$ = this.keyFrameLoop$.pipe
+      // cube loop
+      const cubeLoop$ = combineLatest( [ this.keyFrameLoop$, this.appleOnce$ ] ).pipe
       (
-        combineLatest( this.appleOnce$ ),
-        scan<any, any>( ( [ prev, appleQue, lastCubePos, lastApple ], [ curr, apple ]: [ any, Vector3 ] ) =>
+        scan<any, any>( ( [ prev, appleQueue, lastCubePos, lastApple ], [ curr, apple ]: [ any, Vector3 ] ) =>
         {
           // TODO: anomaly!
           if ( prev.time === curr.time ) {
-            return [ curr, appleQue, lastCubePos, lastApple ];
+            return [ curr, appleQueue, lastCubePos, lastApple ];
           }
-          if ( apple )
+          if ( apple ) // has eaten an apple
           {
             if ( !lastApple || !apple.equals( lastApple ) ) {
-              appleQue.push( this.segments.length - 1 );
+              appleQueue.push( this.cubePositions.length - 1 );
             }
           }
           if ( lastCubePos )
           {
             this.cubes.last.object.position.copy( lastCubePos[0] );
             this.cubes.last.object.quaternion.copy( lastCubePos[1] );
-            lastCubePos = undefined;
+            lastCubePos = null;
           }
           if ( prev.futureTime !== curr.futureTime )
           {
-            appleQue = appleQue.reduceRight( (acc, val) =>
+            appleQueue = appleQueue.reduceRight( (acc, val) =>
             {
               if ( --val >= 0 ) return [val].concat(acc);
-              this.segments.push(undefined);
+              this.cubePositions.push( null );
               const lastCube = this.cubes.last.object;
               lastCubePos = [ lastCube.position.clone(), lastCube.quaternion.clone(), lastCube ];
               this.cdr.detectChanges();
@@ -214,8 +218,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             }, [] );
           }
           if ( apple ) lastApple = apple.clone();
-          return [ curr, appleQue, lastCubePos, lastApple ];
-        }, [ { futureTime: undefined }, [], undefined, undefined ] ),
+          return [ curr, appleQueue, lastCubePos, lastApple ];
+        }, [ { futureTime: null }, [], null, null ] ),
         map( _ => this.cubeLoops[ this.cubeLoops.length - 1 ] ),
         distinctUntilChanged(),
         mergeAll(),
@@ -226,27 +230,31 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
 
   updateCamera( quaternion: Quaternion )
   {
-    this.camera.camera.up.copy( vY ).applyQuaternion( quaternion ).normalize();
+    this.camera.object.up.copy( vY ).applyQuaternion( quaternion ).normalize();
   }
 
-  private direction = new Subject<DirectionCommand>();
-  private directionOnce$ = this.direction.asObservable().pipe( startWith( undefined ), switchMap( current => of( current, undefined ) ) );
+  private direction$ = new Subject<DirectionCommand>();
+  private directionOnce$ = this.direction$.asObservable().pipe
+  (
+    startWith( null as any ),
+    switchMap( current => of( ...[ current, null ] ) )
+  );
 
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)
-  private arrowUp() { this.direction.next( DirectionCommand.UP ); }
+  private arrowUp() { this.direction$.next( DirectionCommand.UP ); }
 
   @HostListener(`${dkd}s`)
   @HostListener(`${dkd}arrowDown`)
-  private arrowDown() { this.direction.next( DirectionCommand.DOWN ); }
+  private arrowDown() { this.direction$.next( DirectionCommand.DOWN ); }
 
   @HostListener(`${dkd}a`)
   @HostListener(`${dkd}arrowLeft`)
-  private arrowLeft() { this.direction.next( DirectionCommand.LEFT ); }
+  private arrowLeft() { this.direction$.next( DirectionCommand.LEFT ); }
 
   @HostListener(`${dkd}d`)
   @HostListener(`${dkd}arrowRight`)
-  private arrowRight() { this.direction.next( DirectionCommand.RIGHT ); }
+  private arrowRight() { this.direction$.next( DirectionCommand.RIGHT ); }
 
   void() {}
   log( ...args: any[] ) { console.log('…snake…', ...args); }

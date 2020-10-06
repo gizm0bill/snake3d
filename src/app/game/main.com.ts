@@ -9,12 +9,13 @@ import
   ViewChild,
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
-import { Vector3, Spherical } from 'three';
-import { interval, animationFrameScheduler, Subject, zip, range, BehaviorSubject, timer, Observable, EMPTY } from 'rxjs';
+import { Vector3, Spherical, EdgesGeometry, BoxBufferGeometry, LineBasicMaterial, LineSegments, DoubleSide, BackSide, Box3, Box3Helper, Color } from 'three';
+import { interval, animationFrameScheduler, Subject, zip, range, BehaviorSubject, timer, Observable, EMPTY, Subscription } from 'rxjs';
 import { scan, tap, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';
 import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
+import { SceneDir } from '../three-js/scene.dir';
 
 const dkd = 'document:keydown.';
 const dirs =
@@ -37,7 +38,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
   @ViewChild(SnakeCom) snake: SnakeCom;
   @ViewChild(AppleCom) apple: AppleCom;
-
+  @ViewChild(SceneDir) scene: SceneDir;
 
   constructor
   (
@@ -48,6 +49,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   }
 
+  // bind keys to direction changes
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)
   private arrowUp() { this.direction$.next( dirs.up ); }
@@ -67,10 +69,12 @@ export class MainCom implements OnDestroy, AfterViewInit
   private direction$ = new Subject;
 
   snakeLength = 3;
-  snakeSize = 2;
-  snakeSpeed = 700;
+  snakeSize = 1;
+  snakeSpeed = 1000;
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
+
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
+  // simple seconds counter
   public seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
 
   @HostListener( 'window:resize', ['$event'] )
@@ -78,33 +82,30 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.childRenderer.onResize( event );
   }
 
+  // using a sphere to calculate camera movement around the snake head
   private spherical = new Spherical(10);
-  @HostListener( 'document:mousemove', ['$event.clientX', '$event.clientY'] )
+  // Move camera around head on a sphere
+  @HostListener( 'document:mousemove', [ '$event.clientX', '$event.clientY' ] )
   mouseMove( clientX: number, clientY: number )
   {
     const clientHeight = document.documentElement.clientHeight;
-    Object.assign( this.spherical,
-    {
-     phi: ( clientY / clientHeight ) * Math.PI * 2,
-     theta: -( clientX / clientHeight ) * Math.PI * 2
-    } );
-    this.camera.camera.position.setFromSpherical( this.spherical );
-    if ( this.snake ) this.camera.camera.lookAt( this.snake.lookAtPosition );
+    this.spherical.phi = ( clientY / clientHeight ) * Math.PI * 2;
+    this.spherical.theta = -( clientX / clientHeight ) * Math.PI * 2;
+    this.camera.object.position.setFromSpherical( this.spherical );
+    if ( this.snake ) this.camera.object.lookAt( this.snake.lookAtPosition );
   }
-
+  // Increase camera radius on scroll
   @HostListener( 'document:wheel', ['$event.deltaY'] )
   mouseWheel( deltaY: number )
   {
     const radius = Math.max( 2.5, Math.min( 25, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
     this.spherical.radius = radius;
-    this.camera.camera.position.setFromSpherical( this.spherical );
+    this.camera.object.position.setFromSpherical( this.spherical );
   }
 
+  pauseResume$ = new BehaviorSubject<boolean>(false);
 
-  pauseResume$ = new BehaviorSubject<boolean>(false)
-  ngOnDestroy()
-  {
-  }
+  // start a new loop
   private newLoop()
   {
     return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
@@ -117,7 +118,9 @@ export class MainCom implements OnDestroy, AfterViewInit
       share()
     );
   }
+  // main game loop with pause functionality
   loop$ = this.pauseResume$.pipe( scan( p => !p, false ), switchMap( resume => resume ? this.newLoop() : EMPTY ) );
+  private subscription = new Subscription;
 
   gridSize = 5;
   private randomApplePosition( snakePositions: Vector3[] )
@@ -132,15 +135,16 @@ export class MainCom implements OnDestroy, AfterViewInit
   apple$: Observable<any>;
   ngAfterViewInit()
   {
+
     this.apple$ = this.snakePosition$.pipe
     (
       // tap( ( ...args: any[] ) => { console.log(args); } ),
       filter( ([ [ snakePosition ] ]) => {
-        console.log( this.applePosition.value, snakePosition );
+        // console.log( this.applePosition.value, snakePosition );
         return this.applePosition.value.equals( snakePosition );
       } ),
-      map( ([ [ snakePosition ] ]) => { return snakePosition.clone(); } ),
-      tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 2 ) ) ) ),
+      map( ([ [ snakePosition ] ]) => snakePosition.clone() ),
+      tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 10 ) ) ) ),
       // {
         // if ( this.applePosition.value.equals( snakePosition ) )
         // {
@@ -150,9 +154,17 @@ export class MainCom implements OnDestroy, AfterViewInit
         // }
       // } ),
     );
-    // debugger;
-    this.loop$.subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) );
-    this.cdr.detectChanges();
+    this.subscription.add( this.loop$.subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) ) );
 
+    const box = new Box3();
+    box.setFromCenterAndSize( vZero.clone(), new Vector3( 10, 10, 10 ) );
+    this.scene.object.add( new Box3Helper( box, new Color( 0x000000 ) ) );
+    this.subscription.add( this.snakePosition$.subscribe( ( [ positions ] ) => console.log( !box.containsPoint( positions[0] ) ? 'game over' : positions[0] ) ) );
+    this.cdr.detectChanges();
+  }
+
+  ngOnDestroy()
+  {
+    this.subscription.unsubscribe();
   }
 }

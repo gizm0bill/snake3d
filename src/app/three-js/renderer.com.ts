@@ -46,7 +46,7 @@ export class RendererCom implements AfterViewInit
   {
     const sceneComponent = this.sceneComponents.first;
     const cameraComponent = this.cameraComponents.first;
-    this.renderer.render(sceneComponent.object, cameraComponent.camera);
+    this.renderer.render(sceneComponent.object, cameraComponent.object);
   }
 
   private calculateAspectRatio(): number

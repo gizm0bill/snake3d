@@ -1,9 +1,25 @@
 import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter, NgZone, OnChanges, SimpleChanges } from '@angular/core';
 import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from '../../three-js';
-import { LineSegments, BoxBufferGeometry, Mesh, MeshPhongMaterial, WireframeGeometry, Vector3, ExtrudeBufferGeometry, Shape, Object3D, Color, Quaternion, ArrowHelper, MeshBasicMaterial, BufferGeometry } from 'three';
-import { Observable, of } from 'rxjs';
-import { scan, withLatestFrom, startWith, switchAll, combineLatest, switchMap, tap, bufferWhen, exhaustMap } from 'rxjs/operators';
+import
+{
+  LineSegments,
+  BoxBufferGeometry,
+  Mesh, MeshPhongMaterial,
+  WireframeGeometry,
+  Vector3,
+  ExtrudeBufferGeometry,
+  Shape,
+  Object3D,
+  Color,
+  Quaternion,
+  ArrowHelper,
+  BufferGeometry
+} from 'three';
+import { Observable } from 'rxjs';
+import { scan } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+
+declare const ngDevMode: boolean;
 
 export enum DirectionCommand { UP = 1, DOWN = 2 , LEFT = 3, RIGHT = 4 }
 /**
@@ -50,9 +66,6 @@ let cubeGeometry: BufferGeometry;
 })
 export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewInit, OnChanges
 {
-  constructor( private zone: NgZone ) {
-    super();
-  }
   @Input() size = 1;
   @Input() speed = 3000;
   @Input() loop$: Observable<any>;
@@ -73,7 +86,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
   private setupHelpers()
   {
-    if ( this.dev || !environment.production )
+    if ( typeof ngDevMode === 'undefined' || ngDevMode )
     {
       const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
       const wireGeom = new WireframeGeometry( wireBoxGeom );
