@@ -8,14 +8,12 @@ import
   OnDestroy,
   ViewChild,
 } from '@angular/core';
-import { RendererCom, deg90, vY, vX, vZero, vZ } from '../three-js';
-import { Vector3, Spherical, EdgesGeometry, BoxBufferGeometry, LineBasicMaterial, LineSegments, DoubleSide, BackSide, Box3, Box3Helper, Color } from 'three';
+import { RendererCom, deg90, vY, vX, vZero, vZ, PerspectiveCameraDir, SceneDir } from 'three-js';
+import { Vector3, Spherical, Box3, Box3Helper, Color } from 'three';
 import { interval, animationFrameScheduler, Subject, zip, range, BehaviorSubject, timer, Observable, EMPTY, Subscription } from 'rxjs';
 import { scan, tap, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';
-import { PerspectiveCameraDir } from '../three-js/camera';
 import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
-import { SceneDir } from '../three-js/scene.dir';
 
 const dkd = 'document:keydown.';
 const dirs =

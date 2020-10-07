@@ -1,10 +1,10 @@
 import { Directive, AfterViewInit, Input, forwardRef } from '@angular/core';
 import { Color, FrontSide, MeshStandardMaterial, Side } from 'three';
-import { AMaterial } from '../a';
+import { AMaterial } from './a';
 
 @Directive
 ({
-  selector: 'three-mesh-standard-material',
+  selector: 'three-standard-material',
   providers: [{ provide: AMaterial, useExisting: forwardRef( () => MeshStandardMaterialDir ) }]
 })
 export class MeshStandardMaterialDir extends AMaterial<MeshStandardMaterial> implements AfterViewInit

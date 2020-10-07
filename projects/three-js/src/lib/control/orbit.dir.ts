@@ -1,8 +1,7 @@
 import { Directive, Input, AfterViewInit, OnDestroy, ContentChildren, QueryList } from '@angular/core';
 import { PerspectiveCameraDir } from '../camera';
 import { RendererCom } from '../renderer.com';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/js/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 @Directive
 ( {

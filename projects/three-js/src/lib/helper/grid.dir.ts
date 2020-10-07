@@ -1,5 +1,5 @@
 import { Directive, Input, AfterViewInit, forwardRef } from '@angular/core';
-import * as THREE from 'three';
+import { Color, GridHelper } from 'three';
 import { AObject3D } from '../object-3d';
 
 @Directive
@@ -7,15 +7,15 @@ import { AObject3D } from '../object-3d';
   selector: 'three-grid-helper',
   providers: [{ provide: AObject3D, useExisting: forwardRef( () => GridHelperDir ) }]
 })
-export class GridHelperDir extends AObject3D<THREE.AxesHelper> implements AfterViewInit
+export class GridHelperDir extends AObject3D<GridHelper> implements AfterViewInit
 {
   @Input() size: number;
   @Input() divisions: number;
-  @Input() color: THREE.Color;
+  @Input() color: Color;
 
   ngAfterViewInit()
   {
-    this._object = new THREE.GridHelper(this.size, this.divisions, undefined, this.color || new THREE.Color(0xeeeeee));
+    this._object = new GridHelper(this.size, this.divisions, undefined, this.color || new Color(0xeeeeee));
     super.ngAfterViewInit();
   }
 }

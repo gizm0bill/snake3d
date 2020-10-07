@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, forwardRef, ViewChild, OnChanges, SimpleChange } from '@angular/core';
-import { AObject3D, SphereBufferGeometryDir, MeshDir, MeshPhongMaterialDir } from '../three-js';
+import { AObject3D, SphereBufferGeometryDir, MeshDir, MeshPhongMaterialDir } from 'three-js';
 
 @Component
 ({
   selector: 'game-apple',
   template: `
     <three-sphere-buffer-geometry radius='.75'></three-sphere-buffer-geometry>
-    <three-mesh-phong-material></three-mesh-phong-material>
+    <three-phong-material></three-phong-material>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: AObject3D, useExisting: forwardRef( () => AppleCom ) }]

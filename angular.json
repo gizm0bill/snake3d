@@ -139,38 +139,38 @@
         }
       }
     },
-    "three": {
-      "root": "projects/three",
-      "sourceRoot": "projects/three/src",
+    "three-js": {
       "projectType": "library",
+      "root": "projects/three-js",
+      "sourceRoot": "projects/three-js/src",
       "prefix": "lib",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-ng-packagr:build",
+          "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
-            "tsConfig": "projects/three/tsconfig.lib.json",
-            "project": "projects/three/ng-package.json"
+            "tsConfig": "projects/three-js/tsconfig.lib.json",
+            "project": "projects/three-js/ng-package.json"
           },
           "configurations": {
             "production": {
-              "tsConfig": "projects/three/tsconfig.lib.prod.json"
+              "tsConfig": "projects/three-js/tsconfig.lib.prod.json"
             }
           }
         },
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "projects/three/src/test.ts",
-            "tsConfig": "projects/three/tsconfig.spec.json",
-            "karmaConfig": "projects/three/karma.conf.js"
+            "main": "projects/three-js/src/test.ts",
+            "tsConfig": "projects/three-js/tsconfig.spec.json",
+            "karmaConfig": "projects/three-js/karma.conf.js"
           }
         },
         "lint": {
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
             "tsConfig": [
-              "projects/three/tsconfig.lib.json",
-              "projects/three/tsconfig.spec.json"
+              "projects/three-js/tsconfig.lib.json",
+              "projects/three-js/tsconfig.spec.json"
             ],
             "exclude": [
               "**/node_modules/**"

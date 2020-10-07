@@ -1,5 +1,4 @@
 import { NgModule } from '@angular/core';
-import './enable.js';
 import { RendererCom } from './renderer.com';
 import { SceneDir } from './scene.dir';
 import { LightMod } from './light';
@@ -9,6 +8,8 @@ import { HelperMod } from './helper';
 import { CameraMod } from './camera';
 import { GeometryMod } from './geometry';
 import { ControlMod } from './control';
+
+import * as THREE from 'three';
 
 @NgModule
 ({
@@ -32,9 +33,14 @@ import { ControlMod } from './control';
 })
 export class ThreeJsMod { }
 
-export * from './geometry';
-export * from './material';
-export * from './renderer.com';
-export * from './object';
 export * from './constants';
 export * from './object-3d';
+export * from './geometry';
+export * from './material';
+export * from './object';
+export * from './renderer.com';
+export * from './scene.dir';
+export * from './camera';
+export * from './control';
+export * from './light';
+export * from './helper';

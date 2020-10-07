@@ -1,14 +1,13 @@
 import { ChangeDetectionStrategy, Component, forwardRef, ViewChild, OnChanges, SimpleChange } from '@angular/core';
 import { BackSide } from 'three';
-import { AObject3D, MeshDir, MeshPhongMaterialDir, BoxBufferGeometryDir } from '../three-js';
-import { MeshStandardMaterialDir } from '../three-js/material/mesh/standard.dir';
+import { AObject3D, MeshDir, MeshPhongMaterialDir, BoxBufferGeometryDir, MeshStandardMaterialDir } from 'three-js';
 
 @Component
 ({
   selector: 'game-box',
   template: `
     <three-box-buffer-geometry></three-box-buffer-geometry>
-    <three-mesh-standard-material [side]='BackSide'></three-mesh-standard-material>
+    <three-standard-material [side]='BackSide'></three-standard-material>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: AObject3D, useExisting: forwardRef( () => BoxCom ) }]

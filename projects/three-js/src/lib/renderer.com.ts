@@ -10,7 +10,7 @@ import
 } from '@angular/core';
 import { SceneDir } from './scene.dir';
 import { PerspectiveCameraDir } from './camera';
-import * as THREE from 'three';
+import { WebGLRenderer } from 'three';
 
 @Component
 ({
@@ -20,7 +20,7 @@ import * as THREE from 'three';
 })
 export class RendererCom implements AfterViewInit
 {
-  private renderer: THREE.WebGLRenderer;
+  private renderer: WebGLRenderer;
 
   constructor() { this.render = this.render.bind(this); }
 
@@ -32,10 +32,10 @@ export class RendererCom implements AfterViewInit
 
   ngAfterViewInit()
   {
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: !!1, alpha: true });
+    this.renderer = new WebGLRenderer( { canvas: this.canvas, antialias: !!1, alpha: true } );
     this.renderer.setPixelRatio(devicePixelRatio);
     // this.renderer.shadowMap.enabled = true;
-    // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setClearColor(0xffffff, 0);
     this.renderer.autoClear = true;
     this.onResize(new Event('_dummy_'));

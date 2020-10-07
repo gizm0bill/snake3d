@@ -1,16 +1,16 @@
 import { Directive, AfterViewInit, Input, forwardRef } from '@angular/core';
-import { MeshLambertMaterial, Color, FrontSide } from 'three';
-import { AMaterial } from '../a';
+import { MeshLambertMaterial, Color, FrontSide, Side } from 'three';
+import { AMaterial } from './a';
 
 @Directive
 ({
-  selector: 'three-mesh-lambert-material',
+  selector: 'three-lambert-material',
   providers: [{ provide: AMaterial, useExisting: forwardRef( () => MeshLambertMaterialDir ) }]
 })
 export class MeshLambertMaterialDir extends AMaterial<MeshLambertMaterial> implements AfterViewInit
 {
-  @Input() color: THREE.Color = new Color( 0x0000FF );
-  @Input() side: THREE.Side = FrontSide;
+  @Input() color: Color = new Color( 0x0000FF );
+  @Input() side: Side = FrontSide;
   @Input() skinning = false;
   @Input() wireframe = false;
 
