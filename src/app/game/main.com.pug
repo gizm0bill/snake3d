@@ -8,7 +8,7 @@ three-renderer( #mainRenderer )
   three-scene
 
     three-axes-helper( size=5 )
-    three-grid-helper( size=128, divisions=64 )
+    three-grid-helper( size=100, divisions=100 )
 
     three-ambient-light( color='#000000' )
 
@@ -16,11 +16,11 @@ three-renderer( #mainRenderer )
     three-point-light( color='#FFFFFF', position=' 70, 30, 50 ' )
     three-point-light( color='#FFFFFF', position=' 50, 100, -30 ' )
 
+    game-box( [width]=' snakeSize * 19 ', [height]=' snakeSize * 19 ', [depth]=' snakeSize * 19 ' )
+
     game-snake( [speed]='snakeSpeed', [length]='snakeLength', [size]='snakeSize', [renderer]='childRenderer',
       [camera]='gameCamera',
       [loop$]='loop$',
       [(position$)]='snakePosition$',
       [(apple$)]='apple$' )
-    game-apple( [position]='applePosition$|async' )
-
-
+    game-apple( [position]='applePosition$|async', [size]='snakeSize * .625' )

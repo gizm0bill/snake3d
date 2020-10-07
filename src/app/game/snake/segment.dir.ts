@@ -1,10 +1,11 @@
-import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter, NgZone, OnChanges, SimpleChanges } from '@angular/core';
+import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from 'three-js';
 import
 {
   LineSegments,
   BoxBufferGeometry,
-  Mesh, MeshPhongMaterial,
+  Mesh,
+  MeshLambertMaterial,
   WireframeGeometry,
   Vector3,
   ExtrudeBufferGeometry,
@@ -17,7 +18,6 @@ import
 } from 'three';
 import { Observable } from 'rxjs';
 import { scan } from 'rxjs/operators';
-import { environment } from 'src/environments/environment';
 
 declare const ngDevMode: boolean;
 
@@ -128,7 +128,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     const geo = cubeGeometry
       ? cubeGeometry.clone()
       : cubeGeometry = createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 );
-    this.cube = new Mesh( geo, new MeshPhongMaterial( { color: 0x2194CE } ) );
+    this.cube = new Mesh( geo, new MeshLambertMaterial( { color: 0xCE9421 } ) );
     this.cube.scale.copy( new Vector3( .75, .75, .75 ) );
     this.cube.position.setZ( -this.size );
     this.setupHelpers();

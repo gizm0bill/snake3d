@@ -9,7 +9,7 @@ import { AMaterial } from './a';
 })
 export class MeshLambertMaterialDir extends AMaterial<MeshLambertMaterial> implements AfterViewInit
 {
-  @Input() color: Color = new Color( 0x0000FF );
+  @Input() color: Color = new Color( 0xFF0000 );
   @Input() side: Side = FrontSide;
   @Input() skinning = false;
   @Input() wireframe = false;

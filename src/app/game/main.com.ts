@@ -14,6 +14,7 @@ import { interval, animationFrameScheduler, Subject, zip, range, BehaviorSubject
 import { scan, tap, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';
 import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
+import { BoxCom } from './box.com';
 
 const dkd = 'document:keydown.';
 const dirs =
@@ -32,20 +33,18 @@ const dirs =
 })
 export class MainCom implements OnDestroy, AfterViewInit
 {
+  constructor
+  (
+    private readonly zone: NgZone,
+    private readonly cdr: ChangeDetectorRef,
+  ) { }
+
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
   @ViewChild(SnakeCom) snake: SnakeCom;
   @ViewChild(AppleCom) apple: AppleCom;
   @ViewChild(SceneDir) scene: SceneDir;
-
-  constructor
-  (
-    private readonly zone: NgZone,
-    private readonly cdr: ChangeDetectorRef,
-  )
-  {
-
-  }
+  @ViewChild(BoxCom) gameBox: BoxCom;
 
   // bind keys to direction changes
   @HostListener(`${dkd}w`)
@@ -64,11 +63,16 @@ export class MainCom implements OnDestroy, AfterViewInit
   @HostListener(`${dkd}arrowRight`)
   private arrowRight() { this.direction$.next( dirs.right ); }
 
+  pauseResume$ = new BehaviorSubject<boolean>( true );
+
+  @HostListener(`${dkd}space`)
+  private pauseResume() { this.pauseResume$.next( true ); }
+
   private direction$ = new Subject;
 
   snakeLength = 3;
   snakeSize = 1;
-  snakeSpeed = 1000;
+  snakeSpeed = 1500;
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
@@ -76,9 +80,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   public seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
 
   @HostListener( 'window:resize', ['$event'] )
-  onWindowResize( event: any ) {
-    this.childRenderer.onResize( event );
-  }
+  onWindowResize( event: any ) { this.childRenderer.onResize( event ); }
 
   // using a sphere to calculate camera movement around the snake head
   private spherical = new Spherical(10);
@@ -101,8 +103,6 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.camera.object.position.setFromSpherical( this.spherical );
   }
 
-  pauseResume$ = new BehaviorSubject<boolean>(false);
-
   // start a new loop
   private newLoop()
   {
@@ -117,7 +117,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     );
   }
   // main game loop with pause functionality
-  loop$ = this.pauseResume$.pipe( scan( p => !p, false ), switchMap( resume => resume ? this.newLoop() : EMPTY ) );
+  loop$ = this.pauseResume$.pipe( scan( p => !p ), switchMap( resume => resume ? this.newLoop() : EMPTY ) );
   private subscription = new Subscription;
 
   gridSize = 5;
@@ -155,9 +155,14 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.subscription.add( this.loop$.subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) ) );
 
     const box = new Box3();
-    box.setFromCenterAndSize( vZero.clone(), new Vector3( 10, 10, 10 ) );
+    box.setFromObject( this.gameBox.object );
+    const snakeHeadBox = new Box3;
     this.scene.object.add( new Box3Helper( box, new Color( 0x000000 ) ) );
-    this.subscription.add( this.snakePosition$.subscribe( ( [ positions ] ) => console.log( !box.containsPoint( positions[0] ) ? 'game over' : positions[0] ) ) );
+    this.subscription.add( this.snakePosition$.subscribe( ( [ positions ] ) =>
+    {
+      snakeHeadBox.setFromCenterAndSize( positions[0], new Vector3( this.snakeSize, this.snakeSize, this.snakeSize ) );
+      console.log( !box.containsBox( snakeHeadBox ) ? 'game over' : positions[0] );
+    } ) );
     this.cdr.detectChanges();
   }
 
