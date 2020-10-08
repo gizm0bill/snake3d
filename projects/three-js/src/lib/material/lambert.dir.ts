@@ -5,7 +5,7 @@ import { AMaterial } from './a';
 @Directive
 ({
   selector: 'three-lambert-material',
-  providers: [{ provide: AMaterial, useExisting: forwardRef( () => MeshLambertMaterialDir ) }]
+  providers: [ { provide: AMaterial, useExisting: forwardRef( () => MeshLambertMaterialDir ) } ]
 })
 export class MeshLambertMaterialDir extends AMaterial<MeshLambertMaterial> implements AfterViewInit
 {

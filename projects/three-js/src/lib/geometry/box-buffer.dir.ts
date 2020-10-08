@@ -5,7 +5,7 @@ import { AGeometry } from './a';
 @Directive
 ({
   selector: 'three-box-buffer-geometry',
-  providers: [{ provide: AGeometry, useExisting: forwardRef( () => BoxBufferGeometryDir ) }]
+  providers: [ { provide: AGeometry, useExisting: forwardRef( () => BoxBufferGeometryDir ) } ]
 })
 export class BoxBufferGeometryDir extends AGeometry<BoxBufferGeometry> implements AfterViewInit
 {

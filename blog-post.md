@@ -31,7 +31,7 @@ ngAfterViewInit()
 ```
 We also need a method that calls `render` on the renderer with the scene and camera but first we need to create some components for them as well. 
 
-Now, looking at the three.js library, most objects extend `Object3D`, and these 2 as well, so let's do the same thing in Angular.
+Looking at the three.js library, most objects extend `Object3D`, and these 2 as well, so let's do the same thing in Angular.
 Let's create an abstract generic wrapper class as base for the rest, keeping in mind that we could also add child objects.
 
 ```typescript
@@ -56,3 +56,27 @@ export abstract class AbstractObject3D<T extends Object3D> implements AfterViewI
   }
 }
 ```
+
+Now, we can implement our objects using this
+
+```typescript
+import { Directive, AfterViewInit, forwardRef } from '@angular/core';
+import { Scene } from 'three';
+import { AObject3D } from './object-3d';
+
+@Directive
+( {
+  selector: 'three-scene',
+  // https://angular.io/guide/dependency-injection-navtree
+  providers: [ { provide: AObject3D, useExisting: forwardRef( () => SceneDirective ) } ]
+} )
+export class SceneDirective extends AbstractObject3D<Scene> implements AfterViewInit
+{
+  ngAfterViewInit()
+  {
+    this.object = new Scene;
+    super.ngAfterViewInit();
+  }
+}
+```
+

@@ -11,8 +11,7 @@ export class SceneDir extends AObject3D<Scene> implements AfterViewInit
 {
   ngAfterViewInit()
   {
-    this._object = new Scene;
+    this.object = new Scene;
     super.ngAfterViewInit();
-    // setTimeout( () => console.log(this._object), 5000 );
   }
 }
