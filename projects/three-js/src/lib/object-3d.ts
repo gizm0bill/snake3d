@@ -41,21 +41,21 @@ export abstract class AObject3D<T extends Object3D> implements AfterViewInit
     this._rotation = new Euler( x as number, y as number, z as number, order as string );
   }
 
-
-
   protected _object: T;
   get object(): T { return this._object; }
+  set object( value: T ) { this._object = value; }
 
-  protected addChild(object: Object3D): T { return this._object.add(object); }
+  protected addChild( object: Object3D ) { return this._object.add(object); }
 
-  ngAfterViewInit(): void
+  ngAfterViewInit()
   {
     this.object.position.copy( this.position );
     this.object.rotation.copy( this.rotation );
 
     if ( this.childNodes !== undefined && this.childNodes.length > 1 )
-      this.childNodes.filter( i => i !== this && i.object !== undefined )
-        .forEach( i =>  this.addChild( i.object ) );
-    this.childNodes.changes.subscribe( _ => { debugger; } )
+      this.object.add( ...this.childNodes
+        // filter out self and unset objects
+        .filter( node => node !== this && node.object !== undefined )
+        .map( ( { object } ) => object ) );
   }
 }

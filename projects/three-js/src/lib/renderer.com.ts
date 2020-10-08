@@ -6,23 +6,26 @@ import
   AfterViewInit,
   HostListener,
   ContentChildren,
-  QueryList
+  QueryList, Input
 } from '@angular/core';
 import { SceneDir } from './scene.dir';
 import { PerspectiveCameraDir } from './camera';
-import { WebGLRenderer } from 'three';
+import { Color, WebGLRenderer } from 'three';
 
 @Component
-({
+( {
   selector: 'three-renderer',
   template: '<canvas #canvas width="0" height="0"></canvas>',
   styles: [ 'canvas { width: 100%; height: 100%; }' ]
-})
+} )
 export class RendererCom implements AfterViewInit
 {
+  constructor() { this.render = this.render.bind(this); }
+
   private renderer: WebGLRenderer;
 
-  constructor() { this.render = this.render.bind(this); }
+  @Input() color: string | number | Color = 0xffffff;
+  @Input() alpha = 0;
 
   @ViewChild('canvas', { static: true }) canvasRef: ElementRef;
   get canvas(): HTMLCanvasElement { return this.canvasRef.nativeElement; }
@@ -32,11 +35,11 @@ export class RendererCom implements AfterViewInit
 
   ngAfterViewInit()
   {
-    this.renderer = new WebGLRenderer( { canvas: this.canvas, antialias: !!1, alpha: true } );
+    this.renderer = new WebGLRenderer( { canvas: this.canvas, antialias: true, alpha: true } );
     this.renderer.setPixelRatio(devicePixelRatio);
     // this.renderer.shadowMap.enabled = true;
     // this.renderer.shadowMap.type = PCFSoftShadowMap;
-    this.renderer.setClearColor(0xffffff, 0);
+    this.renderer.setClearColor( this.color, this.alpha );
     this.renderer.autoClear = true;
     this.onResize(new Event('_dummy_'));
   }
