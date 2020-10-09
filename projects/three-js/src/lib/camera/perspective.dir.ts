@@ -10,7 +10,7 @@ import { PerspectiveCamera } from 'three';
 })
 export class PerspectiveCameraDir extends ACamera<PerspectiveCamera> implements AfterViewInit, OnChanges
 {
-  object: PerspectiveCamera;
+  _object: PerspectiveCamera;
 
   @Input() fov: number;
   @Input() near: number;

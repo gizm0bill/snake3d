@@ -1,7 +1,9 @@
+import { Directive } from '@angular/core';
 import { Camera } from 'three';
+import { AObject3D } from '../object-3d';
 
-export abstract class ACamera<T extends Camera>
+@Directive()
+export abstract class ACamera<T extends Camera> extends AObject3D<T>
 {
-  object: T;
   abstract updateAspectRatio(aspect: number): void;
 }

@@ -9,7 +9,7 @@ import
   QueryList, Input
 } from '@angular/core';
 import { SceneDir } from './scene.dir';
-import { PerspectiveCameraDir } from './camera';
+import { ACamera, PerspectiveCameraDir } from './camera';
 import { Color, WebGLRenderer } from 'three';
 
 @Component
@@ -31,7 +31,7 @@ export class RendererCom implements AfterViewInit
   get canvas(): HTMLCanvasElement { return this.canvasRef.nativeElement; }
 
   @ContentChildren(SceneDir) sceneComponents: QueryList<SceneDir>;
-  @ContentChildren(PerspectiveCameraDir) cameraComponents: QueryList<PerspectiveCameraDir>;
+  @ContentChildren(ACamera) cameraComponents: QueryList<ACamera<any>>;
 
   ngAfterViewInit()
   {
