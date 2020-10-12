@@ -8,7 +8,7 @@ import
   OnDestroy,
   ViewChild,
 } from '@angular/core';
-import { RendererCom, deg90, vY, vX, vZero, vZ, PerspectiveCameraDir, SceneDir } from 'three-js';
+import { RendererCom, deg90, vY, vX, vZero, vZ, PerspectiveCameraDir, SceneDir } from 'angular-three';
 import { Vector3, Spherical, Box3, Box3Helper, Color } from 'three';
 import { interval, animationFrameScheduler, Subject, zip, range, BehaviorSubject, timer, Observable, EMPTY, Subscription } from 'rxjs';
 import { scan, tap, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';

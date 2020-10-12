@@ -12,7 +12,7 @@ import { ControlMod } from './control';
 import * as THREE from 'three';
 
 @NgModule
-({
+( {
   declarations:
   [
     RendererCom,
@@ -30,8 +30,8 @@ import * as THREE from 'three';
     MaterialMod,
     ControlMod,
   ]
-})
-export class ThreeJsMod { }
+} )
+export class AngularThreeMod { }
 
 export * from './constants';
 export * from './object-3d';

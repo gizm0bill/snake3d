@@ -1,5 +1,5 @@
 import { forwardRef, AfterViewInit, Directive, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
-import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from 'three-js';
+import { AObject3D, vZero, deg90, vX, vY, vZ, quatZero } from 'angular-three';
 import
 {
   LineSegments,

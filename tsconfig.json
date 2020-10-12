@@ -20,8 +20,8 @@
       "dom"
     ],
     "paths": {
-      "three-js": [
-        "dist/three-js"
+      "angular-three": [
+        "dist/angular-three"
       ]
     }
   }

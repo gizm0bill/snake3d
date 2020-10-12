@@ -278,30 +278,32 @@ We can put all these into a library project (angular-three)
 
 Let's create a component with the desired component/directive structure
 
-#### _`some.component.html`_
-```typescript
+#### _`demo.component.html`_
+```html
 <three-renderer>
   <three-perspective-camera [fov]="60" [near]="1" [far]="1100" position=" 5, 5, -10 "></three-perspective-camera>
   <three-scene>
-    <three-ambient-light [color]='#000000'></three-ambient-light>
+    <three-ambient-light color='#000000'></three-ambient-light>
     <three-point-light color='#FFFFFF' position=" 0, 50, 20 "></three-point-light>
-    <three-sphere-buffer-geometry [radius]='5'></three-sphere-buffer-geometry>
-    <three-lambert-material></three-lambert-material>
+    <three-mesh>
+      <three-sphere-buffer-geometry [radius]='5'></three-sphere-buffer-geometry>
+      <three-lambert-material></three-lambert-material>
+    </three-mesh>
   </three-scene>
 </three-renderer>
 ```
 
-#### _`some.component.ts`_
+#### _`demo.component.ts`_
 ```typescript
 import { Component, AfterViewInit, ViewChild, NgZone } from '@angular/core';
 import { RendererComponent } from 'angular-three';
 
 @Component
 ( {
-  selector: 'some-component',
-  template: './some.component.html'
+  selector: 'demo-component',
+  template: './demo.component.html'
 } )
-export class SomeComponent implement AfterViewInit
+export class DemoComponent implement AfterViewInit
 {
   @ViewChild( RendererComponent ) renderer: RendererComponent;
   
@@ -312,13 +314,13 @@ export class SomeComponent implement AfterViewInit
     // might make a performance difference
     this.zone.runOutsideAngular( _ => 
     {
-      animate = () =>
+      const animate = () =>
       {
         requestAnimationFrame( animate );
-        this.renderer.render() );
+        this.renderer.render();
       };
       animate();
-    }
+    } )
   }
 } 
 ```

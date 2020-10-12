@@ -3,7 +3,7 @@ import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
 import { Subject, Observable, of, defer, combineLatest, NEVER } from 'rxjs';
 import { scan, share, startWith, switchMap, map, filter, distinctUntilChanged, mergeAll, tap } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
-import { vZero, vY, vZ, AObject3D, ACamera } from 'three-js';
+import { vZero, vY, vZ, AObject3D, ACamera } from 'angular-three';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
 import { AnonymousSubject } from 'rxjs/internal/Subject';
 

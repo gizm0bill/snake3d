@@ -5,18 +5,18 @@ import
   ElementRef,
   AfterViewInit,
   HostListener,
-  ContentChildren,
-  QueryList, Input
+  Input,
+  ContentChild
 } from '@angular/core';
 import { SceneDir } from './scene.dir';
-import { ACamera, PerspectiveCameraDir } from './camera';
+import { ACamera } from './camera';
 import { Color, WebGLRenderer } from 'three';
 
 @Component
 ( {
   selector: 'three-renderer',
   template: '<canvas #canvas width="0" height="0"></canvas>',
-  styles: [ 'canvas { width: 100%; height: 100%; }' ]
+  styles: [ ':host { display: block; height: 100%; }', 'canvas { width: 100%; height: 100%; }' ]
 } )
 export class RendererCom implements AfterViewInit
 {
@@ -25,13 +25,15 @@ export class RendererCom implements AfterViewInit
   private renderer: WebGLRenderer;
 
   @Input() color: string | number | Color = 0xffffff;
-  @Input() alpha = 0;
+  @Input() alpha = 1;
 
   @ViewChild('canvas', { static: true }) canvasRef: ElementRef;
   get canvas(): HTMLCanvasElement { return this.canvasRef.nativeElement; }
 
-  @ContentChildren(SceneDir) sceneComponents: QueryList<SceneDir>;
-  @ContentChildren(ACamera) cameraComponents: QueryList<ACamera<any>>;
+  // @ContentChildren(SceneDir) sceneComponents: QueryList<SceneDir>;
+  // @ContentChildren(ACamera) cameraComponents: QueryList<ACamera<any>>;
+  @ContentChild( SceneDir ) scene: SceneDir;
+  @ContentChild( ACamera ) camera: ACamera<any>;
 
   ngAfterViewInit()
   {
@@ -41,24 +43,19 @@ export class RendererCom implements AfterViewInit
     // this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.setClearColor( this.color, this.alpha );
     this.renderer.autoClear = true;
-    this.onResize(new Event('_dummy_'));
+    this.onResize( new Event( '_dummy_' ) );
   }
 
   get domElement() { return this.renderer.domElement; }
   render()
   {
-    const sceneComponent = this.sceneComponents.first;
-    const cameraComponent = this.cameraComponents.first;
-    this.renderer.render(sceneComponent.object, cameraComponent.object);
+    this.renderer.render( this.scene.object, this.camera.object );
   }
 
   private calculateAspectRatio(): number
   {
-    const height = this.canvas.clientHeight - 4;
-    if (height === 0) {
-      return 0;
-    }
-    return (this.canvas.clientWidth - 4) / (this.canvas.clientHeight - 4);
+    if ( this.canvas.clientHeight === 0 ) return 0;
+    return this.canvas.clientWidth / this.canvas.clientHeight;
   }
 
   @HostListener('window:resize', ['$event'])
@@ -66,17 +63,14 @@ export class RendererCom implements AfterViewInit
   {
     this.canvas.style.width = '100%';
     this.canvas.style.height = '100%';
-    // console.log('RendererComponent.onResize: ' + this.canvas.clientWidth + ', ' + this.canvas.clientHeight);
-
-    this.updateChildCamerasAspectRatio();
-
-    this.renderer.setSize(this.canvas.clientWidth - 4, this.canvas.clientHeight - 4);
+    this.updateCameraAspectRatio();
+    this.renderer.setSize( this.canvas.clientWidth, this.canvas.clientHeight );
     this.render();
   }
 
-  updateChildCamerasAspectRatio()
+  updateCameraAspectRatio()
   {
     const aspect = this.calculateAspectRatio();
-    this.cameraComponents.forEach(camera => camera.updateAspectRatio(aspect));
+    this.camera.updateAspectRatio( aspect );
   }
 }

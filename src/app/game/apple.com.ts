@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, forwardRef, ViewChild, OnChanges, SimpleChange, Input } from '@angular/core';
-import { AObject3D, SphereBufferGeometryDir, MeshDir, MeshLambertMaterialDir } from 'three-js';
+import { AObject3D, SphereBufferGeometryDir, MeshDir, MeshLambertMaterialDir } from 'angular-three';
 
 @Component
 ({

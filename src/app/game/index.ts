@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ThreeJsMod } from 'three-js';
+import { AngularThreeMod } from 'angular-three';
 import { MainCom } from './main.com';
 import { RoutingMod } from './routing.mod';
 import { SnakeCom } from './snake.com';
@@ -21,7 +21,7 @@ import { BoxCom } from './box.com';
   imports:
   [
     CommonModule,
-    ThreeJsMod,
+    AngularThreeMod,
     RoutingMod,
   ],
   providers: [  ],

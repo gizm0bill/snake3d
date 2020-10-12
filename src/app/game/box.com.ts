@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, forwardRef, ViewChild, OnChanges, SimpleChange, Input } from '@angular/core';
 import { BackSide } from 'three';
-import { AObject3D, MeshDir, BoxBufferGeometryDir, MeshLambertMaterialDir } from 'three-js';
+import { AObject3D, MeshDir, BoxBufferGeometryDir, MeshLambertMaterialDir } from 'angular-three';
 
 @Component
 ({
