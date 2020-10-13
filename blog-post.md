@@ -17,7 +17,7 @@ Knowing that it's an Angular application we would prefer to use the view system 
 
 So let's create the `RendererComponent` with a `canvas` element inside bound using `@ViewChild( 'canvas' ) canvasRef: ElementRef;` and two `ContentChildren` for the scene and the camera. After view init we create a [`WebGLRenderer`][2] object on the canvas and we can also add other properties like color and alpha from inputs
 
-#### _`renderer.component.ts`_
+#### [_`renderer.component.ts`_](projects/angular-three/src/lib/renderer.com.ts)
 ```typescript
 import { AfterViewInit, Component,  Input, ViewChild, ElementRef, ContentChild } from '@angular/core';
 import { Color, WebGLRenderer } from 'three';
@@ -59,7 +59,7 @@ We also need a method that calls `render` on the renderer with the scene and cam
 Looking at the three.js library, most objects extend [`Object3D`][3], and these two as well, so let's do the same thing in Angular.
 Let's create an abstract generic wrapper class as base for the rest, keeping in mind that we could also add child objects.
 
-#### _`abstract-object-3d.ts`_
+#### (_`abstract-object-3d.ts`_)(projects/angular-three/src/lib/object-3d.com.ts)
 ```typescript
 import { Directive, ContentChildren } from '@angular/core';
 import { Object3D } from 'three';
@@ -87,7 +87,7 @@ Now, we can implement our objects using this
 
 ## Scene
 
-#### _`scene.directive.ts`_
+#### [_`scene.directive.ts`_](projects/angular-three/src/lib/scene.dir.ts)
 ```typescript
 import { Directive, AfterViewInit, forwardRef } from '@angular/core';
 import { Scene } from 'three';
@@ -112,7 +112,7 @@ export class SceneDirective extends AbstractObject3D<Scene> implements AfterView
 
 The three.js [`Camera`][4] also extended from [`Object3D`][3] but it's also abstract so we could do the same to follow this pattern
 
-#### _`abstract-camera.ts`_
+#### [_`abstract-camera.ts`_](projects/angular-three/src/lib/camera/a.ts)
 ```typescript
 import { Camera } from 'three';
 import { AbstractObject3D } from './abstract-object-3d';
@@ -124,7 +124,7 @@ export abstract class AbstractCamera<T extends Camera> extends AbstractObject3D<
 ```
 The concrete [`PerspectiveCamera`][5] implementation
 
-#### _`perspective-camera.directive.ts`_
+#### [_`perspective-camera.directive.ts`_](projects/angular-three/src/lib/camera/perspective.dir.ts)
 ```typescript
 import { Directive, Input, AfterViewInit, forwardRef } from '@angular/core';
 import { PerspectiveCamera } from 'three';
@@ -166,7 +166,7 @@ export class PerspectiveCameraDirective extends AbstractCamera<PerspectiveCamera
 
 [Meshes][6] are created using a [geometries][7] and [materials][8], so we're going to create some simple abstract classes for both
 
-#### _`abstract-geometry.ts`_
+#### [_`abstract-geometry.ts`_](projects/angular-three/src/lib/geometry/a.ts)
 ```typescript
 import { Geometry, BufferGeometry } from 'three';
 
@@ -175,7 +175,7 @@ export abstract class AbstractGeometry<T extends Geometry|BufferGeometry>
   protected object: T;
 }
 ```
-#### _`abstract-material.ts`_
+#### [_`abstract-material.ts`_](projects/angular-three/src/lib/material/a.ts)
 ```typescript
 import { Material } from 'three';
 
@@ -187,7 +187,7 @@ export abstract class AbstractMaterial<T extends Material>
 
 and now some concrete implementations
 
-#### _`sphere-buffer-geometry.directive.ts`_
+#### [_`sphere-buffer-geometry.directive.ts`_](projects/angular-three/src/lib/geometry/sphere-buffer.dir.ts)
 ```typescript
 import { Directive, AfterViewInit, Input, forwardRef } from '@angular/core';
 import { SphereBufferGeometry } from 'three';
@@ -215,7 +215,7 @@ export class SphereBufferGeometryDirective extends AbstractGeometry<SphereBuffer
   }
 }
 ```
-#### _`standard-material.directive.ts`_
+#### [_`standard-material.directive.ts`_](projects/angular-three/src/lib/material/standard.dir.ts)
 ```typescript
 import { Directive, AfterViewInit, Input, forwardRef } from '@angular/core';
 import { MeshStandardMaterial, Color, Side, FrontSide } from 'three';
@@ -243,7 +243,7 @@ export class MeshStandardMaterialDirective extends AbstractMaterial<MeshStandard
 }
 ```
 And now we are ready to create the [Mesh][6] directive
-#### _`mesh.directive.ts`_
+#### [_`mesh.directive.ts`_](projects/angular-three/src/lib/object/mesh.dir.ts)
 ```typescript
 import { Directive, AfterViewInit, forwardRef, ContentChild, Input } from '@angular/core';
 import { Mesh, MeshBasicMaterial, Vector3 } from 'three';
@@ -278,7 +278,7 @@ We can put all these into a library project (angular-three)
 
 Let's create a component with the desired component/directive structure
 
-#### _`demo.component.html`_
+#### [_`demo.component.html`_](src/app/demo.com.ts)
 ```html
 <three-renderer>
   <three-perspective-camera [fov]="60" [near]="1" [far]="1100" position=" 5, 5, -10 "></three-perspective-camera>
@@ -293,7 +293,7 @@ Let's create a component with the desired component/directive structure
 </three-renderer>
 ```
 
-#### _`demo.component.ts`_
+#### [_`demo.component.ts`_](src/app/demo.com.ts)
 ```typescript
 import { Component, AfterViewInit, ViewChild, NgZone } from '@angular/core';
 import { RendererComponent } from 'angular-three';
@@ -328,7 +328,7 @@ export class DemoComponent implement AfterViewInit
 ## Controls
 [Three.js][1] currently has some types of controls implemented found under the examples in the build. We could also use these pretty simple like so:
 
-#### _`orbit-controls.directive.ts`_
+#### [_`orbit-controls.directive.ts`_](projects/angular-three/src/lib/control/oribit.dir.ts)
 ```typescript
 import { Directive, Input, AfterViewInit, OnDestroy, ContentChild } from '@angular/core';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';

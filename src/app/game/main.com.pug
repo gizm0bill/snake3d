@@ -1,7 +1,7 @@
 .timer( (click)="pauseResume$.next(true)" ) {{seconds$|async}}
 
 //- three-orbit-controls
-three-renderer( #mainRenderer )
+three-renderer
 
   three-perspective-camera( [fov]=60, [near]=1, [far]=1100, positionX=5 positionY=5, positionZ=-10, #gameCamera='threePerspectiveCamera' )
 
@@ -18,9 +18,13 @@ three-renderer( #mainRenderer )
 
     game-box( [width]=' snakeSize * 19 ', [height]=' snakeSize * 19 ', [depth]=' snakeSize * 19 ' )
 
-    game-snake( [speed]='snakeSpeed', [length]='snakeLength', [size]='snakeSize', [renderer]='childRenderer',
-      [camera]='gameCamera',
-      [loop$]='loop$',
+    game-snake(
+      [speed]='snakeSpeed',
+      [length]='snakeLength',
+      [size]='snakeSize',
       [(position$)]='snakePosition$',
+      [loop$]='loop$',
+      [camera]='gameCamera',
       [(apple$)]='apple$' )
+
     game-apple( [position]='applePosition$|async', [size]='snakeSize * .625' )

@@ -1,6 +1,6 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
-import { Subject, Observable, of, defer, combineLatest, NEVER } from 'rxjs';
+import { Subject, Observable, of, defer, combineLatest, NEVER, BehaviorSubject } from 'rxjs';
 import { scan, share, startWith, switchMap, map, filter, distinctUntilChanged, mergeAll, tap } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ, AObject3D, ACamera } from 'angular-three';
@@ -48,8 +48,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Input() apple$: Observable<any>;
   private appleOnce$: Observable<any>;
 
-  @Input() renderer: any;
-
   get lookAtPosition(){ return  this.cubes.first ? this.cubes.first.lookAt : vZero; }
 
   cubeDiffer: IterableDiffer<any>;
@@ -77,13 +75,13 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   {
     this.keyFrameLoop$ = this.loop$.pipe
     (
-      scan<any, any>( (previous, current) =>
+      scan<{ time: number, futureTime: number, delta: number }, { futureTime: number }>( (previous, current) =>
       {
         current.futureTime = previous.futureTime;
         if ( current.time > previous.futureTime  )
         {
-          const dt = current.time - current.futureTime;
-          if ( dt > this.speed ) // frame drop mitigation?
+          const deltaTime = current.time - current.futureTime;
+          if ( deltaTime > this.speed ) // frame drop mitigation?
           {
             current.delta = 16.66;
             current.futureTime = current.time + current.delta;
@@ -91,7 +89,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           else
           {
             current.delta = current.time - current.futureTime;
-            current.futureTime += this.speed - dt;
+            current.futureTime += this.speed - deltaTime;
           }
         }
         return current;
@@ -100,14 +98,18 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     );
 
     const directions = [];
-    const keyFrameDirection$ = combineLatest( [ this.keyFrameLoop$, this.directionOnce$ ] ) .pipe
+    const keyFrameDirection$ = combineLatest
+    ( [
+      this.keyFrameLoop$,
+      this.direction$.asObservable().pipe( switchMap( current => of( ...[ current, null ] ) ) )
+    ] ) .pipe
     (
       scan( ( [ previous, holdDirection ], [ current, direction ] ) =>
       {
         if ( previous.futureTime !== current.futureTime )
         {
           if ( holdDirection ) directions.push( { dir: holdDirection, exhaust: Array(this.cubePositions.length).fill(undefined).map( (_, i) => i ) } );
-          return [ current, undefined ];
+          return [ current, null ];
         }
         holdDirection = holdDirection || direction;
         return [ current, holdDirection ];
@@ -231,12 +233,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.camera.object.up.copy( vY ).applyQuaternion( quaternion ).normalize();
   }
 
-  private direction$ = new Subject<DirectionCommand>();
-  private directionOnce$ = this.direction$.asObservable().pipe
-  (
-    startWith( null as any ),
-    switchMap( current => of( ...[ current, null ] ) )
-  );
+  private direction$ = new BehaviorSubject<DirectionCommand>( null );
 
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)

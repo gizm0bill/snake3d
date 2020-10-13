@@ -136,21 +136,16 @@ export class MainCom implements OnDestroy, AfterViewInit
 
     this.apple$ = this.snakePosition$.pipe
     (
-      // tap( ( ...args: any[] ) => { console.log(args); } ),
-      filter( ([ [ snakePosition ] ]) => {
-        // console.log( this.applePosition.value, snakePosition );
-        return this.applePosition.value.equals( snakePosition );
+      filter( ( [ snakePositions ] ) => this.applePosition.value.equals( snakePositions[0] ) ),
+      // tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 10 ) ) ) ),
+      tap( ( [ snakePositions ] ) =>
+      {
+        const newApple = this.randomApplePosition( snakePositions );
+        this.applePosition.next( newApple );
+        // TODO: increase score
+        // this.eatenApples.push( this.snakePosition[0].clone() );
       } ),
-      map( ([ [ snakePosition ] ]) => snakePosition.clone() ),
-      tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 10 ) ) ) ),
-      // {
-        // if ( this.applePosition.value.equals( snakePosition ) )
-        // {
-        //   // this.applePosition.next( this.randomApplePosition() );
-        //   // this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 2 ) ) );
-        //   // this.eatenApples.push( this.snakePosition[0].clone() );
-        // }
-      // } ),
+      map( ( [ [ snakePosition ] ] ) => snakePosition.clone() ),
     );
     this.subscription.add( this.loop$.subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) ) );
 
