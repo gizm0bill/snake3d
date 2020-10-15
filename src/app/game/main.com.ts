@@ -16,14 +16,7 @@ import { SnakeCom } from './snake.com';
 import { AppleCom } from './apple.com';
 import { BoxCom } from './box.com';
 
-const dkd = 'document:keydown.';
-const dirs =
-{
-  up: [ vX, -deg90 ],
-  down: [ vX, deg90 ],
-  left: [ vY, deg90 ],
-  right: [ vY, -deg90 ],
-};
+const { PI, floor, random, min, max } = Math;
 
 @Component
 ({
@@ -39,6 +32,9 @@ export class MainCom implements OnDestroy, AfterViewInit
     private readonly cdr: ChangeDetectorRef,
   ) { }
 
+  // simple seconds counter
+  public seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
+
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
   @ViewChild(SnakeCom) snake: SnakeCom;
@@ -46,29 +42,9 @@ export class MainCom implements OnDestroy, AfterViewInit
   @ViewChild(SceneDir) scene: SceneDir;
   @ViewChild(BoxCom) gameBox: BoxCom;
 
-  // bind keys to direction changes
-  @HostListener(`${dkd}w`)
-  @HostListener(`${dkd}arrowUp`)
-  private arrowUp() { this.direction$.next( dirs.up ); }
-
-  @HostListener(`${dkd}s`)
-  @HostListener(`${dkd}arrowDown`)
-  private arrowDown() { this.direction$.next( dirs.down ); }
-
-  @HostListener(`${dkd}a`)
-  @HostListener(`${dkd}arrowLeft`)
-  private arrowLeft() { this.direction$.next( dirs.left ); }
-
-  @HostListener(`${dkd}d`)
-  @HostListener(`${dkd}arrowRight`)
-  private arrowRight() { this.direction$.next( dirs.right ); }
-
   pauseResume$ = new BehaviorSubject<boolean>( true );
-
-  @HostListener(`${dkd}space`)
+  @HostListener(`document:keydown.space`)
   private pauseResume() { this.pauseResume$.next( true ); }
-
-  private direction$ = new Subject;
 
   snakeLength = 3;
   snakeSize = 1;
@@ -76,8 +52,6 @@ export class MainCom implements OnDestroy, AfterViewInit
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
-  // simple seconds counter
-  public seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
 
   @HostListener( 'window:resize', ['$event'] )
   onWindowResize( event: any ) { this.childRenderer.onResize( event ); }
@@ -88,9 +62,9 @@ export class MainCom implements OnDestroy, AfterViewInit
   @HostListener( 'document:mousemove', [ '$event.clientX', '$event.clientY' ] )
   mouseMove( clientX: number, clientY: number )
   {
-    const clientHeight = document.documentElement.clientHeight;
-    this.spherical.phi = ( clientY / clientHeight ) * Math.PI * 2;
-    this.spherical.theta = -( clientX / clientHeight ) * Math.PI * 2;
+    const { clientHeight, clientWidth } = document.documentElement;
+    this.spherical.phi = -( clientY * PI / clientHeight );
+    this.spherical.theta = -( clientX * 2 * PI / clientWidth ) + PI;
     this.camera.object.position.setFromSpherical( this.spherical );
     if ( this.snake ) this.camera.object.lookAt( this.snake.lookAtPosition );
   }
@@ -98,8 +72,8 @@ export class MainCom implements OnDestroy, AfterViewInit
   @HostListener( 'document:wheel', ['$event.deltaY'] )
   mouseWheel( deltaY: number )
   {
-    const radius = Math.max( 2.5, Math.min( 25, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05263157895 ) ) );
-    this.spherical.radius = radius;
+    // maximum radius 25
+    this.spherical.radius = min( 25, this.spherical.radius * ( deltaY < 0 ? .95 : 1.05 ) );
     this.camera.object.position.setFromSpherical( this.spherical );
   }
 
@@ -124,7 +98,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   private randomApplePosition( snakePositions: Vector3[] )
   {
     let newPos: Vector3;
-    const newPosFn = () => Math.floor( Math.random() * ( this.gridSize + this.gridSize + 1 ) - this.gridSize ) * this.snakeSize;
+    const newPosFn = () => floor( random() * ( this.gridSize + this.gridSize + 1 ) - this.gridSize ) * this.snakeSize;
     do { newPos = new Vector3( newPosFn(), newPosFn(), newPosFn() ); }
     while ( snakePositions.find( pos => !!pos.round().equals( newPos ) ) );
     return newPos;
@@ -133,7 +107,8 @@ export class MainCom implements OnDestroy, AfterViewInit
   apple$: Observable<any>;
   ngAfterViewInit()
   {
-
+    // set initial camera position
+    this.mouseMove( document.body.clientWidth / 2, document.body.clientHeight * .33 );
     this.apple$ = this.snakePosition$.pipe
     (
       filter( ( snakePositions ) => this.applePosition.value.equals( snakePositions[0] ) ),
