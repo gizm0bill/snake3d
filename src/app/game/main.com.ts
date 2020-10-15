@@ -106,7 +106,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   // start a new loop
   private newLoop()
   {
-    return timer( 0, 1000 / 60, animationFrameScheduler ).pipe
+    return timer( 0, 1000 / 10, animationFrameScheduler ).pipe
     (
       scan<any, { time: number, delta: number }>( previous =>
       {
@@ -129,23 +129,23 @@ export class MainCom implements OnDestroy, AfterViewInit
     while ( snakePositions.find( pos => !!pos.round().equals( newPos ) ) );
     return newPos;
   }
-  snakePosition$: Observable<[ Vector3[], { time: number, delta: number, futureTime: number} ]>;
+  snakePosition$: Observable<Vector3[]>;
   apple$: Observable<any>;
   ngAfterViewInit()
   {
 
     this.apple$ = this.snakePosition$.pipe
     (
-      filter( ( [ snakePositions ] ) => this.applePosition.value.equals( snakePositions[0] ) ),
+      filter( ( snakePositions ) => this.applePosition.value.equals( snakePositions[0] ) ),
       // tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 10 ) ) ) ),
-      tap( ( [ snakePositions ] ) =>
+      tap( ( snakePositions ) =>
       {
         const newApple = this.randomApplePosition( snakePositions );
         this.applePosition.next( newApple );
         // TODO: increase score
         // this.eatenApples.push( this.snakePosition[0].clone() );
       } ),
-      map( ( [ [ snakePosition ] ] ) => snakePosition.clone() ),
+      map( ( [ snakePosition ] ) => snakePosition.clone() ),
     );
     this.subscription.add( this.loop$.subscribe( _ => this.zone.runOutsideAngular( __ => this.childRenderer.render() ) ) );
 
@@ -153,7 +153,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     box.setFromObject( this.gameBox.object );
     const snakeHeadBox = new Box3;
     this.scene.object.add( new Box3Helper( box, new Color( 0x000000 ) ) );
-    this.subscription.add( this.snakePosition$.subscribe( ( [ positions ] ) =>
+    this.subscription.add( this.snakePosition$.subscribe( ( positions ) =>
     {
       snakeHeadBox.setFromCenterAndSize( positions[0], new Vector3( this.snakeSize, this.snakeSize, this.snakeSize ) );
       console.log( !box.containsBox( snakeHeadBox ) ? 'game over' : positions[0] );

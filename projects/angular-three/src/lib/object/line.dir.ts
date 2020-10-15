@@ -9,7 +9,7 @@ import { AGeometry } from '../geometry';
   selector: 'three-line',
   providers: [ { provide: AObject3D, useExisting: forwardRef( () => LineDir ) }]
 })
-export class LineDir<T extends Line> extends AObject3D<T> implements AfterViewInit
+export class LineDir extends AObject3D<Line> implements AfterViewInit
 {
   @ContentChild( AGeometry, { static: true } ) geometry: AGeometry<any>;
   @ContentChild( AMaterial, { static: true } ) material: AMaterial<any>;
@@ -19,7 +19,7 @@ export class LineDir<T extends Line> extends AObject3D<T> implements AfterViewIn
     (
       this.geometry.object,
       this.material && this.material.object || new LineBasicMaterial( { color: 0x000000 } )
-    ) as T;
+    );
     super.ngAfterViewInit();
   }
 }

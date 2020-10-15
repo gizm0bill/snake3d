@@ -34,13 +34,26 @@ this.loop$ = timer( 0, 1000 / 60, animationFrameScheduler ).pipe
 )
 ```
 ```html
-  <game-snake [loop]="loop$" [speed]="snakeSpeed">
+  <game-snake [loop$]="loop$" [speed]="snakeSpeed">
 ```
+
+Going on with our heuristic train of thought let's build our snake as a set of segments
+
+```typescript
+segmentPositions: Array<Vector3>
+```
+```html
+<ng-template ngFor let-segment [ngForOf]="segmentPositions" let-i="index">
+  <game-snake-segment [speed]="speed" [size]="size" [index]="i"… />
+</ng-template>
+
+```
+## getting snake position title? 
 
 Now inside the snake component we can branch it to a "keyframe loop", marking each step the snake should advance to a new position depending on its speed. Basically just setting a future time marker on the current loop and advancing it forward when the current time passes it, subtracting the frame delta difference
 
 ```typescript
-this.keyFrameLoop$ = this.loop.pipe
+this.keyFrameLoop$ = this.loop$.pipe
 (
   scan<{ time: number, futureTime: number, delta: number }, { futureTime: number }>( ( previous, current ) =>
   {
@@ -61,9 +74,26 @@ this.keyFrameLoop$ = this.loop.pipe
     }
     return current;
   }, { futureTime: performance.now() + this.speed } ),
-  share(),
 );
 ```
+
+Let's use this to stream the snake position
+```typescript
+// SnakeSegmentDirective will extend AbstractObject3D and it will have an object with a position vector
+@Output() position$Change = new EventEmitter<Observable<any>>();
+@ViewChildren( SnakeSegmentDirective ) segments: QueryList<SnakeSegmentDirective>;
+...
+// mark the key frame, filter the stream on this moment and send the segment positions
+const keyFramePosition$ = this.keyFrameLoop$.pipe
+(
+  scan<{ futureTime: number }, { futureTime: number, select: boolean }>( ( previous, current ) =>
+    ( { ...current, select: previous.futureTime !== current.futureTime } ) ),
+  filter( ( { select } ) => select ),
+  map( _ => this.segments.toArray().map( segment => segment.object.position.round() ) ),
+);
+this.position$Change.emit( keyFramePosition$ )
+```
+
 
 Directions, we can implement these with a component `HostListener` and a `BehaviorSubject`, so each time we press a key it will send a new value to the subject.
 

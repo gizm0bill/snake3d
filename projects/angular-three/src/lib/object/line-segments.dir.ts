@@ -3,14 +3,13 @@ import { LineBasicMaterial, LineSegments } from 'three';
 import { AObject3D } from '../object-3d';
 import { AMaterial } from '../material';
 import { AGeometry } from '../geometry';
-import { LineDir } from './line.dir';
 
 @Directive
 ({
   selector: 'three-line-segments',
   providers: [ { provide: AObject3D, useExisting: forwardRef( () => LineSegmentsDir ) } ]
 })
-export class LineSegmentsDir extends LineDir<LineSegments> implements AfterViewInit
+export class LineSegmentsDir extends AObject3D<LineSegments> implements AfterViewInit
 {
   @ContentChild( AGeometry, { static: true } ) geometry: AGeometry<any>;
   @ContentChild( AMaterial, { static: true } ) material: AMaterial<any>;

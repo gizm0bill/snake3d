@@ -27,9 +27,9 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   // initial length
   @Input() length = 3;
 
-  @ViewChildren(SnakeSegmentDir) cubes: QueryList<SnakeSegmentDir>;
+  @ViewChildren(SnakeSegmentDir) segments: QueryList<SnakeSegmentDir>;
 
-  cubePositions: Array<Vector3>;
+  segmentPositions: Array<Vector3>;
 
   // TODO: not used anymore?
   @Input() behavior$: Observable<any> = NEVER;
@@ -48,7 +48,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Input() apple$: Observable<any>;
   private appleOnce$: Observable<any>;
 
-  get lookAtPosition(){ return  this.cubes.first ? this.cubes.first.lookAt : vZero; }
+  get lookAtPosition(){ return  this.segments.first ? this.segments.first.lookAt : vZero; }
 
   cubeDiffer: IterableDiffer<any>;
   constructor
@@ -104,15 +104,15 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       this.direction$.asObservable().pipe( switchMap( current => of( ...[ current, null ] ) ) )
     ] ) .pipe
     (
-      scan( ( [ previous, holdDirection ], [ current, direction ] ) =>
+      scan( ( [ previous, nextDirection ], [ current, currentDirection ] ) =>
       {
         if ( previous.futureTime !== current.futureTime )
         {
-          if ( holdDirection ) directions.push( { dir: holdDirection, exhaust: Array(this.cubePositions.length).fill(undefined).map( (_, i) => i ) } );
+          if ( nextDirection ) directions.push( { dir: nextDirection, exhaust: Array( this.segmentPositions.length ).fill( null ).map( ( _, i ) => i ) } );
           return [ current, null ];
         }
-        holdDirection = holdDirection || direction;
-        return [ current, holdDirection ];
+        nextDirection = nextDirection || currentDirection;
+        return [ current, nextDirection ];
       }),
       share(),
     );
@@ -143,10 +143,10 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       );
     });
 
-    this.cubes.changes.subscribe( cubes =>
+    this.segments.changes.subscribe( cubes =>
     {
       // add camera to snake head
-      if ( this.cubes.first && this.camera ) this.cubes.first.cube.add( this.camera.object );
+      if ( this.segments.first && this.camera ) this.segments.first.cube.add( this.camera.object );
       this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
       {
         directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length - 1 ] + 1 ) );
@@ -161,14 +161,10 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     // position based on keyframe
     const keyFramePosition$ = this.keyFrameLoop$.pipe
     (
-      scan<any, any>( ( [ prev ], curr ) =>
-      {
-        let select = false;
-        if ( prev.futureTime !== curr.futureTime ) select = true;
-        return [ curr, select ];
-      }, [ { futureTime: null } ] ),
-      filter( ( [ _, select ] ) => !!select ),
-      map( ( [ timeData ] ) => [ this.cubes.toArray().map( segment => segment.object.position.round() ), timeData ] ),
+      scan<{ futureTime: number }, { futureTime: number, select: boolean }>( ( previous, current ) =>
+        ( { ...current, select: previous.futureTime !== current.futureTime } ) ),
+      filter( ( { select } ) => !!select ),
+      map( _ => this.segments.toArray().map( segment => segment.object.position.round() ) ),
       share()
     );
     this.position$Change.emit( keyFramePosition$ );
@@ -182,10 +178,10 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     if ( this.apple$ )
     {
       this.appleOnce$ = this.apple$.pipe( startWith( null as any ) );
-      this.cubePositions = Array( 1 ).fill( undefined );
+      this.segmentPositions = Array( 1 ).fill( null );
 
       // cube loop
-      const cubeLoop$ = combineLatest( [ this.keyFrameLoop$, this.appleOnce$ ] ).pipe
+      const segmentLoop$ = combineLatest( [ this.keyFrameLoop$, this.appleOnce$ ] ).pipe
       (
         scan<any, any>( ( [ prev, appleQueue, lastCubePos, lastApple ], [ curr, apple ]: [ any, Vector3 ] ) =>
         {
@@ -196,13 +192,13 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
           if ( apple ) // has eaten an apple
           {
             if ( !lastApple || !apple.equals( lastApple ) ) {
-              appleQueue.push( this.cubePositions.length - 1 );
+              appleQueue.push( this.segmentPositions.length - 1 );
             }
           }
           if ( lastCubePos )
           {
-            this.cubes.last.object.position.copy( lastCubePos[0] );
-            this.cubes.last.object.quaternion.copy( lastCubePos[1] );
+            this.segments.last.object.position.copy( lastCubePos[0] );
+            this.segments.last.object.quaternion.copy( lastCubePos[1] );
             lastCubePos = null;
           }
           if ( prev.futureTime !== curr.futureTime )
@@ -210,8 +206,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
             appleQueue = appleQueue.reduceRight( (acc, val) =>
             {
               if ( --val >= 0 ) return [val].concat(acc);
-              this.cubePositions.push( null );
-              const lastCube = this.cubes.last.object;
+              this.segmentPositions.push( null );
+              const lastCube = this.segments.last.object;
               lastCubePos = [ lastCube.position.clone(), lastCube.quaternion.clone(), lastCube ];
               this.cdr.detectChanges();
               return [].concat(acc);
@@ -224,7 +220,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         distinctUntilChanged(),
         mergeAll(),
       );
-      cubeLoop$.subscribe();
+      segmentLoop$.subscribe();
     }
   }
 
