@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, HostListener, ViewChildren, QueryList, Input,
   forwardRef, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, ChangeDetectorRef, IterableDiffers, IterableDiffer, IterableChangeRecord } from '@angular/core';
 import { Subject, Observable, of, defer, combineLatest, NEVER, BehaviorSubject } from 'rxjs';
-import { scan, share, startWith, switchMap, map, filter, distinctUntilChanged, mergeAll, tap } from 'rxjs/operators';
+import { scan, share, startWith, switchMap, map, filter, distinctUntilChanged, mergeAll, tap, withLatestFrom } from 'rxjs/operators';
 import { Vector3, Group, Quaternion } from 'three';
 import { vZero, vY, vZ, AObject3D, ACamera } from 'angular-three';
 import { SnakeSegmentDir, DirectionCommand } from './snake/segment.dir';
@@ -46,7 +46,6 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   @Output() position$Change = new EventEmitter<Observable<any>>();
 
   @Input() apple$: Observable<any>;
-  private appleOnce$: Observable<any>;
 
   get lookAtPosition(){ return  this.segments.first ? this.segments.first.lookAt : vZero; }
 
@@ -60,8 +59,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.cubeDiffer = this.differs.find([]).create(null);
   }
 
-  private _cubeLoops = [];
-  cubeLoops = new Proxy( this._cubeLoops,
+  private _cubeLoops: Observable<any>[] = [];
+  segmentLoops = new Proxy( this._cubeLoops,
   {
     set: function(target, property, value, receiver) {
       target[property] = value;
@@ -151,7 +150,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       {
         directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length - 1 ] + 1 ) );
         const l = keyFrameDirection$.pipe( snakeDelay( _.currentIndex ) );
-        this.cubeLoops.push( l );
+        this.segmentLoops.push( l );
         // this.speed -= 25;
         this.addChild( _.item.object );
         this.cdr.detectChanges();
@@ -177,46 +176,41 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   {
     if ( this.apple$ )
     {
-      this.appleOnce$ = this.apple$.pipe( startWith( null as any ) );
       this.segmentPositions = Array( 1 ).fill( null );
 
       // cube loop
-      const segmentLoop$ = combineLatest( [ this.keyFrameLoop$, this.appleOnce$ ] ).pipe
+      const segmentLoop$ = this.keyFrameLoop$.pipe
       (
-        scan<any, any>( ( [ prev, appleQueue, lastCubePos, lastApple ], [ curr, apple ]: [ any, Vector3 ] ) =>
+        withLatestFrom( this.apple$.pipe( startWith( null as any ) ) ),
+        scan<[ any, Vector3 ], any>( ( [ previous, appleQueue, [ lastPosition, lastQuaternion ], lastApple ], [ current, apple ] ) =>
         {
-          // TODO: anomaly!
-          if ( prev.time === curr.time ) {
-            return [ curr, appleQueue, lastCubePos, lastApple ];
-          }
-          if ( apple ) // has eaten an apple
+          // has eaten an apple
+          if ( apple )
           {
-            if ( !lastApple || !apple.equals( lastApple ) ) {
-              appleQueue.push( this.segmentPositions.length - 1 );
-            }
+            if ( !lastApple || !apple.equals( lastApple ) ) appleQueue.push( this.segmentPositions.length - 1 );
+            lastApple = apple.clone();
           }
-          if ( lastCubePos )
+          if ( lastPosition )
           {
-            this.segments.last.object.position.copy( lastCubePos[0] );
-            this.segments.last.object.quaternion.copy( lastCubePos[1] );
-            lastCubePos = null;
+            this.segments.last.object.position.copy( lastPosition );
+            this.segments.last.object.quaternion.copy( lastQuaternion );
+            [ lastPosition, lastQuaternion ] = [ null, null ];
           }
-          if ( prev.futureTime !== curr.futureTime )
+          if ( previous.futureTime !== current.futureTime )
           {
-            appleQueue = appleQueue.reduceRight( (acc, val) =>
+            appleQueue = appleQueue.reduceRight( ( queueSteps, segmentStep ) =>
             {
-              if ( --val >= 0 ) return [val].concat(acc);
+              if ( --segmentStep >= 0 ) return [ segmentStep, ...queueSteps ];
               this.segmentPositions.push( null );
-              const lastCube = this.segments.last.object;
-              lastCubePos = [ lastCube.position.clone(), lastCube.quaternion.clone(), lastCube ];
+              const lastSegment = this.segments.last.object;
+              [ lastPosition, lastQuaternion ] = [ lastSegment.position.clone(), lastSegment.quaternion.clone() ];
               this.cdr.detectChanges();
-              return [].concat(acc);
+              return [ ...queueSteps ];
             }, [] );
           }
-          if ( apple ) lastApple = apple.clone();
-          return [ curr, appleQueue, lastCubePos, lastApple ];
-        }, [ { futureTime: null }, [], null, null ] ),
-        map( _ => this.cubeLoops[ this.cubeLoops.length - 1 ] ),
+          return [ current, appleQueue, [ lastPosition, lastQuaternion ], lastApple ];
+        }, [ { futureTime: null }, [], [ null, null ], null ] ),
+        map( _ => this.segmentLoops[ this.segmentLoops.length - 1 ] ),
         distinctUntilChanged(),
         mergeAll(),
       );

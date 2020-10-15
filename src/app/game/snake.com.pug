@@ -5,4 +5,4 @@ ng-template( ngFor, let-segment, [ngForOf]="segmentPositions", let-i="index", le
     (rotation$)="isFirst ? updateCamera($event) : void()",
     [renderer]="renderer",
     [index]="i",
-    [(loop$)]="cubeLoops[i]" )
+    [(loop$)]="segmentLoops[i]" )

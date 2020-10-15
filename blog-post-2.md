@@ -94,6 +94,70 @@ const keyFramePosition$ = this.keyFrameLoop$.pipe
 this.position$Change.emit( keyFramePosition$ )
 ```
 
+In the main game component, after view init, we can now use this to test if the snake has eaten an apple
+
+```typescript
+this.apple$ = this.snakePosition$.pipe
+(
+  filter( ( [ snakeHeadPosition ] ) => this.currentApplePosition.value.equals( snakeHeadPosition ) ),
+  tap( snakePositions =>
+  {
+    const newApple = this.randomApplePosition( snakePosition );
+    this.applePosition.next( newApple );
+    this.score += 1;
+  } ),
+  map( ( [ snakeHeadPosition ] ) => snakeHeadPosition.clone() )
+);
+```
+Sending it back to the snake so we can increase its length, i.e. add a segment at the end in the current apple position, but when last segment passes
+
+```typescript
+@Input() apple$: Observable<Vector3>;
+segmentLoops: Observable<any>[];
+...
+const segmentLoop$ = this.keyFrameLoop$.pipe
+(
+  withLatestFrom( this.apple$.pipe( startWith( null as any ) ) ),
+  scan<[ any, Vector3], any>( ( [ prev, appleQueue, [ lastPosition, lastQuaternion ], lastApple ], [ current, apple ] ) =>
+  {
+    // snake has eaten an apple, but we need to push it in a queue because we might have other segments to add before this, so we mark the current length of the snake to know when to add the cube
+    if ( apple && ( !apple.equals( lastApple ) || !lastApple ) ) 
+      appleQueue.push( this.segmentPositions.length - 1 );
+    
+    if ( lastPosition )
+    {
+      this.segments.last.object.position.copy( lastPosition );
+      this.segments.last.object.quaternion.copy( lastQuaternion );
+      [ lastPosition, lastQuaternion ] = null;
+    }
+    // key frame change
+    if ( prev.futureTime !== current.futureTime )
+    {
+      // parse over queue to decrement the steps on each segment that we have to add
+      appleQueue = appleQueue.reduceRight( ( queueSteps, segmentStep ) =>
+      {
+        // here we pop the value out if we passed it, also decrement it beforehand 
+        if ( --segmentStep >= 0 ) return [ segmentStep, ...queueSteps ];
+        // add new segment component
+        this.segmentPositions.push( null );
+        const lastCube = this.segments.last.object;
+        [ lastPosition, lastQuaternion ] = [ lastCube.position.clone(), lastCube.quaternion.clone(), lastCube ];
+        // will create a new segment loop, see below
+        this.cdr.detectChanges();
+        return queueSteps;
+      }, [] );
+    }
+    if ( apple ) lastApple = apple.clone();
+    return [ current, appleQueue, [ lastPosition, lastQuaternion ], lastApple ];
+  }, [ { futureTime: null }, [], null, null ] ),
+  // subscribe to new segment loop
+  map( _ => this.segmentLoops[ this.segmentLoops.length - 1 ] ),
+  distinctUntilChanged(),
+  mergeAll(),
+)
+...
+
+```
 
 Directions, we can implement these with a component `HostListener` and a `BehaviorSubject`, so each time we press a key it will send a new value to the subject.
 
