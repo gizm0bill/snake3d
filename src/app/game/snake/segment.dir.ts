@@ -86,6 +86,8 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
 
   private setupHelpers()
   {
+    this.innerBox = new Object3D;
+    this.outerBox = new Object3D;
     if ( typeof ngDevMode === 'undefined' || ngDevMode )
     {
       const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
@@ -95,7 +97,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       Object.assign( (this.innerBox as LineSegments).material,
       {
         depthTest: false,
-        color: new Color(0xAA33FF),
+        color: new Color(0xFFF2CC),
         opacity: .5,
         transparent: true
       } );
@@ -105,7 +107,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       Object.assign( (this.outerBox as LineSegments).material,
       {
         depthTest: false,
-        color: new Color(0xAA9900),
+        color: new Color(0x1EAAEF),
         opacity: .25,
         transparent: true
       } );
@@ -116,8 +118,6 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       this.cube.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
       return;
     }
-    this.innerBox = new Object3D;
-    this.outerBox = new Object3D;
   }
   subLoop$: any;
   cube: Mesh;

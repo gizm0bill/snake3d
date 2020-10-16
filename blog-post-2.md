@@ -1,6 +1,6 @@
 # Snake
 
-## Game scene
+## Game system design
 
 Thinking about this in a natural way let's create a scene with our snake and an apple:
 
@@ -16,7 +16,23 @@ Thinking about this in a natural way let's create a scene with our snake and an 
 </three-renderer>
 ```
 
-We can create a unique game loop, limited to 60 fps using RxJS, from which we can branch out other streams, and can share with the other components through standard Angular inputs.
+Going on with our heuristic train of thought let's build our snake as a set of segments
+
+```typescript
+segmentPositions: Array<Vector3>
+```
+```html
+<ng-template ngFor let-segment [ngForOf]="segmentPositions" let-i="index">
+  <game-snake-segment [speed]="speed" [size]="size" [index]="i" [(loop$)]="segmentLoops[i]"… />
+</ng-template>
+
+```
+
+### Game loop tree
+
+We can create a unique game loop, limited to 60 fps using RxJS, from which we can branch out other streams, and can share with the other components through standard Angular inputs. It's going to look something like this in the end:
+
+![Loop diagram](loop-diagram.png)
 
 ```typescript
 import { timer, animationFrameScheduler } from 'rxjs';
@@ -36,19 +52,6 @@ this.loop$ = timer( 0, 1000 / 60, animationFrameScheduler ).pipe
 ```html
   <game-snake [loop$]="loop$" [speed]="snakeSpeed">
 ```
-
-Going on with our heuristic train of thought let's build our snake as a set of segments
-
-```typescript
-segmentPositions: Array<Vector3>
-```
-```html
-<ng-template ngFor let-segment [ngForOf]="segmentPositions" let-i="index">
-  <game-snake-segment [speed]="speed" [size]="size" [index]="i"… />
-</ng-template>
-
-```
-## getting snake position title? 
 
 Now inside the snake component we can branch it to a "keyframe loop", marking each step the snake should advance to a new position depending on its speed. Basically just setting a future time marker on the current loop and advancing it forward when the current time passes it, subtracting the frame delta difference
 
@@ -78,6 +81,7 @@ this.keyFrameLoop$ = this.loop$.pipe
 ```
 
 Let's use this to stream the snake position
+
 ```typescript
 // SnakeSegmentDirective will extend AbstractObject3D and it will have an object with a position vector
 @Output() position$Change = new EventEmitter<Observable<any>>();
@@ -109,6 +113,7 @@ this.apple$ = this.snakePosition$.pipe
   map( ( [ snakeHeadPosition ] ) => snakeHeadPosition.clone() )
 );
 ```
+
 Sending it back to the snake so we can increase its length, i.e. add a segment at the end in the current apple position, but when last segment passes
 
 ```typescript
@@ -142,7 +147,7 @@ const segmentLoop$ = this.keyFrameLoop$.pipe
         this.segmentPositions.push( null );
         const lastCube = this.segments.last.object;
         [ lastPosition, lastQuaternion ] = [ lastCube.position.clone(), lastCube.quaternion.clone(), lastCube ];
-        // will create a new segment loop, see below
+        // trigger change detection, will create a new segment loop, see below
         this.cdr.detectChanges();
         return queueSteps;
       }, [] );
@@ -152,11 +157,47 @@ const segmentLoop$ = this.keyFrameLoop$.pipe
   }, [ { futureTime: null }, [], null, null ] ),
   // subscribe to new segment loop
   map( _ => this.segmentLoops[ this.segmentLoops.length - 1 ] ),
+  // only once
   distinctUntilChanged(),
   mergeAll(),
 )
 ...
-
+directions: { direction: DirectionCommand, exhaust: number[] };
+cubeDiffer: IterableDiffer<any>;
+this.segments.changes.subscribe( segments =>
+{
+  this.cubeDiffer.diff( segments ).forEachAddedItem( ( segment: IterableChangeRecord<SnakeSegmentDirective> ) =>
+  {
+    directions.forEach( ( { exhaust } ) => exhaust.push( exhaust[exhaust.length - 1 ] + 1 ) );
+    // branch out a new loop for the added segment, see below
+    this.segmentLoops.push( keyFrameDirection$.pipe( segmentDefer( segment.currentIndex ) ) );
+    // increase speed
+    this.speed -= 5;
+    // add segment to the group, which the snake component actually is
+    this.addChild( segment.item.object );
+    // trigger change detection again
+    this.cdr.detectChanges();
+  } );
+} );
+...
+// custom operator factory used to delay direction change for each segment
+const segmentDefer = ( index: number ) => 
+  ( source: Observable<any> ) => source.pipe
+  (
+    scan<any, any>
+    ( (
+      [ { futureTime: previousFutureTime } ],
+      [ { futureTime, delta, time } ]
+    ) =>
+    {
+      let nextDirection: DirectionCommand;
+      // check if segment delays exhausted
+      if ( previousFutureTime !== futureTime ) 
+        for ( const { direction, exhaust } of directions )
+          if ( !~--exhaust[ index ] ) nextDirection = direction;
+      return [ { futureTime, delta, time }, nextDirection ];
+    }, [ { futureTime: performance.now() } ] )
+  );
 ```
 
 Directions, we can implement these with a component `HostListener` and a `BehaviorSubject`, so each time we press a key it will send a new value to the subject.
@@ -187,7 +228,8 @@ const keyFrameDirection$ = combineLatest
   {
     if ( previous.futureTime !== current.futureTime )
     {
-      // if ( nextDirection ) store this and use it later on the snake segments
+      // push into the direction array all the current segments and the number of key frames needed to delay each one
+      if ( nextDirection ) directions.push( { direction: nextDirection, exhaust: Array( this.segmentPositions.length ).fill( null ).map( ( _, i ) => i ) } );
       return [ current, null ]; // reset next direction
     }
     nextDirection = nextDirection || currentDirection; // capture direction change and propagate to next frames
@@ -196,3 +238,40 @@ const keyFrameDirection$ = combineLatest
   share(),
 );
 ```
+
+### Let's render a snake
+
+Based on our loops we can firstly render the snake using the segments as basic boxes.
+
+![Snake bones](snake-bones.gif)
+
+Knowing that we have the segment loops all sent out, and delayed properly, we can take the current direction and easily rotate the segments
+
+```typescript
+export class DirectionSpecs
+{
+  static readonly [DirectionCommand.UP]: DirectionSpec = [  new Vector3( 1, 0, 0 ), -Math.PI / 2, new Vector3( 0, 1, -1 ), new Vector3( 0, -1, -1 ) ];
+  ...
+}
+...
+this.loop$.pipe
+(
+scan<any, any>
+((
+  [ { futureTime: previousFutureTime } ],
+  [ { futureTime, delta, time }, currentDirection ]
+) =>
+{
+  ...
+  if ( !!currentDirection )
+  {
+    const [ axis, angle, pivot, boxPos ] = DirectionSpecs[ currentDirection ];
+    this.box.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
+    this.box.position.copy( vZero ).add( boxPos.clone().multiplyScalar( this.size / 2 ) );
+  }
+} );
+```
+
+What about some proper smooth animation? Since the stream has all the key frame information we can use this to create a repeating internal animation of a moving box
+
+![Segment box](segment-box.gif)

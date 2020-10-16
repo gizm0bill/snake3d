@@ -27,7 +27,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
   // initial length
   @Input() length = 3;
 
-  @ViewChildren(SnakeSegmentDir) segments: QueryList<SnakeSegmentDir>;
+  @ViewChildren( SnakeSegmentDir ) segments: QueryList<SnakeSegmentDir>;
 
   segmentPositions: Array<Vector3>;
 
@@ -59,15 +59,8 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.cubeDiffer = this.differs.find([]).create(null);
   }
 
-  private _cubeLoops: Observable<any>[] = [];
-  segmentLoops = new Proxy( this._cubeLoops,
-  {
-    set: function(target, property, value, receiver) {
-      target[property] = value;
-      // console.log( 'Set %s to %o', property, value);
-      return true;
-    }
-  });
+  segmentLoops: Observable<any>[] = [];
+
   // keyframes loop based on speed
   keyFrameLoop$: Observable<any>;
   ngAfterViewInit()
@@ -107,7 +100,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       {
         if ( previous.futureTime !== current.futureTime )
         {
-          if ( nextDirection ) directions.push( { dir: nextDirection, exhaust: Array( this.segmentPositions.length ).fill( null ).map( ( _, i ) => i ) } );
+          if ( nextDirection ) directions.push( { direction: nextDirection, exhaust: Array( this.segmentPositions.length ).fill( null ).map( ( _, i ) => i ) } );
           return [ current, null ];
         }
         nextDirection = nextDirection || currentDirection;
@@ -117,42 +110,35 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     );
 
     // custom operator to delay each cube's direction
-    const snakeDelay = ( index: number, tag?: string ) => ( source: AnonymousSubject<any> ) => defer( () =>
-    {
-      return source.pipe
+    const segmentDefer = ( index: number ) =>
+      ( source: Observable<any> ) => source.pipe
       (
         scan<any, any>
-        ((
-          [ { futureTime: prevFutureTime } ],
+        ( (
+          [ { futureTime: previousFutureTime } ],
           [ { futureTime, delta, time } ]
         ) =>
         {
-          let returnDirection: DirectionCommand;
-          if ( prevFutureTime !== futureTime )
-          {
-            for ( const direction of directions )
-            {
-              // TODO: remove > 0 items
-              --direction.exhaust[index];
-              if ( direction.exhaust[index] === -1 ) returnDirection = direction.dir;
-            }
-          }
-          return [ { futureTime, delta, time }, returnDirection, tag ];
-        }, [{ futureTime: performance.now() }] )
-      );
-    });
+          let nextDirection: DirectionCommand;
+          if ( previousFutureTime !== futureTime ) for ( const { direction, exhaust } of directions )
+            // TODO: remove > 0 items
+            // tslint:disable-next-line: no-bitwise
+            if ( !~--exhaust[index] ) nextDirection = direction;
 
-    this.segments.changes.subscribe( cubes =>
+          return [ { futureTime, delta, time }, nextDirection ];
+        }, [ { futureTime: performance.now() } ] )
+      );
+
+    this.segments.changes.subscribe( segments =>
     {
       // add camera to snake head
       if ( this.segments.first && this.camera ) this.segments.first.cube.add( this.camera.object );
-      this.cubeDiffer.diff( cubes ).forEachAddedItem( (_: IterableChangeRecord<SnakeSegmentDir>) =>
+      this.cubeDiffer.diff( segments ).forEachAddedItem( ( segment: IterableChangeRecord<SnakeSegmentDir>) =>
       {
-        directions.forEach( ({ exhaust }) => exhaust.push( exhaust[exhaust.length - 1 ] + 1 ) );
-        const l = keyFrameDirection$.pipe( snakeDelay( _.currentIndex ) );
-        this.segmentLoops.push( l );
+        directions.forEach( ( { exhaust } ) => exhaust.push( exhaust[ exhaust.length - 1 ] + 1 ) );
+        this.segmentLoops.push( keyFrameDirection$.pipe( segmentDefer( segment.currentIndex ) ) );
         // this.speed -= 25;
-        this.addChild( _.item.object );
+        this.addChild( segment.item.object );
         this.cdr.detectChanges();
       } );
     } );
@@ -179,7 +165,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
       this.segmentPositions = Array( 1 ).fill( null );
 
       // cube loop
-      const segmentLoop$ = this.keyFrameLoop$.pipe
+      const newSegmentLoop$ = this.keyFrameLoop$.pipe
       (
         withLatestFrom( this.apple$.pipe( startWith( null as any ) ) ),
         scan<[ any, Vector3 ], any>( ( [ previous, appleQueue, [ lastPosition, lastQuaternion ], lastApple ], [ current, apple ] ) =>
@@ -214,7 +200,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
         distinctUntilChanged(),
         mergeAll(),
       );
-      segmentLoop$.subscribe();
+      newSegmentLoop$.subscribe();
     }
   }
 

@@ -22,7 +22,7 @@ export class RendererCom implements AfterViewInit
 {
   constructor() { this.render = this.render.bind(this); }
 
-  private renderer: WebGLRenderer;
+  renderer: WebGLRenderer;
 
   @Input() color: string | number | Color = 0xffffff;
   @Input() alpha = 1;

@@ -9,7 +9,7 @@ import
   ViewChild,
 } from '@angular/core';
 import { RendererCom, deg90, vY, vX, vZero, vZ, PerspectiveCameraDir, SceneDir } from 'angular-three';
-import { Vector3, Spherical, Box3, Box3Helper, Color } from 'three';
+import { Vector3, Spherical, Box3, Box3Helper, Color, TextureLoader, WebGLCubeRenderTarget } from 'three';
 import { interval, animationFrameScheduler, Subject, zip, range, BehaviorSubject, timer, Observable, EMPTY, Subscription } from 'rxjs';
 import { scan, tap, repeat, share, switchMap, map, delay, filter } from 'rxjs/operators';
 import { SnakeCom } from './snake.com';
@@ -30,7 +30,16 @@ export class MainCom implements OnDestroy, AfterViewInit
   (
     private readonly zone: NgZone,
     private readonly cdr: ChangeDetectorRef,
-  ) { }
+  ) {
+    // todo stream
+    const loader = new TextureLoader;
+    const texture = loader.load( 'assets/bg.jpg', () =>
+    {
+      const rt = new WebGLCubeRenderTarget( texture.image.height );
+      rt.fromEquirectangularTexture( this.childRenderer.renderer, texture );
+      this.scene.object.background = rt;
+    } );
+  }
 
   // simple seconds counter
   public seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
