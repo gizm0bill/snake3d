@@ -10,19 +10,21 @@ import { AMaterial } from './a';
 export class MeshLambertMaterialDir extends AMaterial<MeshLambertMaterial> implements AfterViewInit
 {
   @Input() color: Color = new Color( 0xFF0000 );
+  @Input() transparent = false;
+  @Input() opacity = 1;
   @Input() side: Side = FrontSide;
-  @Input() skinning = false;
   @Input() wireframe = false;
 
   ngAfterViewInit()
   {
     this._object = new MeshLambertMaterial
-    ({
+    ( {
       color: this.color,
-      skinning: !!this.skinning,
+      transparent: !!this.transparent,
+      opacity: this.opacity,
       side: this.side,
       wireframe: !!this.wireframe,
-    });
+    } );
   }
 }
 

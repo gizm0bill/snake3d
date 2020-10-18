@@ -32,13 +32,13 @@ export class MainCom implements OnDestroy, AfterViewInit
     private readonly cdr: ChangeDetectorRef,
   ) {
     // todo stream
-    // const loader = new TextureLoader;
-    // const texture = loader.load( 'assets/bg.jpg', () =>
-    // {
-    //   const rt = new WebGLCubeRenderTarget( texture.image.height );
-    //   rt.fromEquirectangularTexture( this.childRenderer.renderer, texture );
-    //   this.scene.object.background = rt;
-    // } );
+    const loader = new TextureLoader;
+    const texture = loader.load( 'assets/bg.jpg', () =>
+    {
+      const rt = new WebGLCubeRenderTarget( texture.image.height );
+      rt.fromEquirectangularTexture( this.childRenderer.renderer, texture );
+      this.scene.object.background = rt;
+    } );
   }
 
   // simple seconds counter
@@ -57,7 +57,7 @@ export class MainCom implements OnDestroy, AfterViewInit
 
   snakeLength = 3;
   snakeSize = 1;
-  snakeSpeed = 1500;
+  snakeSpeed = 1000;
   private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
   applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );

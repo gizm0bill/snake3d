@@ -1,67 +1,25 @@
-import { ChangeDetectionStrategy, Component, forwardRef, ViewChild, OnChanges, SimpleChange, Input, AfterViewInit } from '@angular/core';
-import { BackSide, BoxBufferGeometry, BufferGeometry, EdgesGeometry, Float32BufferAttribute, LineBasicMaterial, LineSegments } from 'three';
-import { AObject3D, LineSegmentsDir, BoxBufferGeometryDir, MeshLambertMaterialDir, AGeometry } from 'angular-three';
+import { ChangeDetectionStrategy, Component, forwardRef, ViewChild, OnChanges, SimpleChange, Input } from '@angular/core';
+import { DoubleSide } from 'three';
+import { AObject3D, MeshDir, BoxBufferGeometryDir, MeshLambertMaterialDir } from 'angular-three';
 
-class GridBoxGeometry
-{
-  constructor( width: number, height: number, depth: number )
-  {
-    const halfWidth = width / 2;
-    const halfHeight = height / 2;
-    const vertices = [];
-    for ( let y = -halfHeight + 1; y <= halfHeight; y++ )
-      vertices.push( -halfWidth, 0, y, halfWidth, 0, y );
-    for ( let x = -halfWidth + 1; x <= halfWidth; x++ )
-      vertices.push( x, 0, -halfHeight, x, 0, halfHeight );
-
-    console.log( vertices );
-
-    const vertices_ = [
-      -3, 0, -3.5,  3, 0, -3.5,
-      -3, 0, -2.5,  3, 0, -2.5,
-      -3, 0, -1.5,  3, 0, -1.5,
-      -3, 0, -.5,   3, 0,  -.5,
-      -3, 0,  .5,   3, 0,   .5,
-      -3, 0,  1.5,  3, 0,  1.5,
-      -3, 0,  2.5,  3, 0,  2.5,
-      -3, 0,  3.5,  3, 0,  3.5,
-      -2, 0, -4.5, -2, 0,  4.5,
-      -1, 0, -4.5, -1, 0,  4.5,
-       0, 0, -4.5,  0, 0,  4.5,
-       1, 0, -4.5,  1, 0,  4.5,
-       2, 0, -4.5,  2, 0,  4.5,
-    ];
-    const geometry = new BufferGeometry();
-    geometry.setAttribute( 'position', new Float32BufferAttribute( vertices, 3 ) );
-    // geometry.setAttribute( 'color', new Float32BufferAttribute( colors, 3 ) );
-    return geometry;
-  }
-}
 @Component
-( {
+({
   selector: 'game-box',
   template: `
-    <three-box-buffer-geometry
-      [width]='width' [height]='height' [depth]='depth'
-      [widthSegments]="2" [heightSegments]="2" [depthSegments]="2">
-    </three-box-buffer-geometry>
+    <three-box-buffer-geometry [width]='width' [height]='height' [depth]='depth'></three-box-buffer-geometry>
+    <three-lambert-material [side]='DoubleSide' color="yellow" transparent="1" [opacity]=".1"></three-lambert-material>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [ { provide: AObject3D, useExisting: forwardRef( () => BoxCom ) } ]
-} )
-export class BoxCom extends LineSegmentsDir implements OnChanges, AfterViewInit
+  providers: [{ provide: AObject3D, useExisting: forwardRef( () => BoxCom ) }]
+})
+export class BoxCom extends MeshDir implements OnChanges
 {
   @Input() width = 49;
   @Input() height = 49;
   @Input() depth = 49;
-  BackSide = BackSide;
-  @ViewChild( BoxBufferGeometryDir, { static: false } ) geometry: AGeometry<any>;
-  ngAfterViewInit()
-  {
-    this.geometry.object = new GridBoxGeometry( this.width, this.height, this.depth );
-    this.material = { object: new LineBasicMaterial( { color: 0x000, toneMapped: false } ) } as any;
-    super.ngAfterViewInit();
-  }
+  DoubleSide = DoubleSide;
+  @ViewChild( BoxBufferGeometryDir, { static: false } ) geometry: BoxBufferGeometryDir;
+  @ViewChild( MeshLambertMaterialDir, { static: false } ) material: MeshLambertMaterialDir;
   ngOnChanges( { position }: { position: SimpleChange } )
   {
     try { this.object.position.copy( position.currentValue ); } catch ( e ) {}

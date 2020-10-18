@@ -88,7 +88,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   {
     this.innerBox = new Object3D;
     this.outerBox = new Object3D;
-    if ( typeof ngDevMode === 'undefined' || ngDevMode )
+    if ( typeof ngDevMode === 'undefined' || ngDevMode ) // development helpers
     {
       const wireBoxGeom = new BoxBufferGeometry( this.size, this.size, this.size );
       const wireGeom = new WireframeGeometry( wireBoxGeom );
@@ -128,7 +128,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     const geo = cubeGeometry
       ? cubeGeometry.clone()
       : cubeGeometry = createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 );
-    this.box = new Mesh( geo, new MeshLambertMaterial( { color: 0xCE9421, transparent: true, opacity: 0.5 } ) );
+    this.box = new Mesh( geo, new MeshLambertMaterial( { color: 0xCE9421 } ) );
     this.box.scale.copy( new Vector3( .75, .75, .75 ) );
     this.box.position.setZ( -this.size );
     this.setupHelpers();
