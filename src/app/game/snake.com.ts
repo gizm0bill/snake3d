@@ -132,7 +132,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.segments.changes.subscribe( segments =>
     {
       // add camera to snake head
-      if ( this.segments.first && this.camera ) this.segments.first.cube.add( this.camera.object );
+      if ( this.segments.first && this.camera ) this.segments.first.box.add( this.camera.object );
       this.cubeDiffer.diff( segments ).forEachAddedItem( ( segment: IterableChangeRecord<SnakeSegmentDir>) =>
       {
         directions.forEach( ( { exhaust } ) => exhaust.push( exhaust[ exhaust.length - 1 ] + 1 ) );

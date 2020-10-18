@@ -7,9 +7,16 @@ class GridBoxGeometry
   constructor( width: number, height: number, depth: number )
   {
     const halfWidth = width / 2;
-    const halfHHeight = height / 2;
+    const halfHeight = height / 2;
+    const vertices = [];
+    for ( let y = -halfHeight + 1; y <= halfHeight; y++ )
+      vertices.push( -halfWidth, 0, y, halfWidth, 0, y );
+    for ( let x = -halfWidth + 1; x <= halfWidth; x++ )
+      vertices.push( x, 0, -halfHeight, x, 0, halfHeight );
 
-    const vertices = [
+    console.log( vertices );
+
+    const vertices_ = [
       -3, 0, -3.5,  3, 0, -3.5,
       -3, 0, -2.5,  3, 0, -2.5,
       -3, 0, -1.5,  3, 0, -1.5,

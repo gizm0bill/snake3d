@@ -256,22 +256,34 @@ export class DirectionSpecs
 ...
 this.loop$.pipe
 (
-scan<any, any>
-((
-  [ { futureTime: previousFutureTime } ],
-  [ { futureTime, delta, time }, currentDirection ]
-) =>
-{
-  ...
-  if ( !!currentDirection )
+  scan( ( [ { futureTime: previousFutureTime } ], [ { futureTime, delta, time },  currentDirection ] ) =>
   {
-    const [ axis, angle, pivot, boxPos ] = DirectionSpecs[ currentDirection ];
-    this.box.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
-    this.box.position.copy( vZero ).add( boxPos.clone().multiplyScalar( this.size / 2 ) );
-  }
-} );
+    ...
+    if ( !!currentDirection )
+    {
+      const [ axis, angle, pivot, boxPos ] = DirectionSpecs[ currentDirection ];
+      this.box.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
+      this.box.position.copy( vZero ).add( boxPos.clone().multiplyScalar( this.size / 2 ) );
+    }
+  } );
 ```
 
 What about some proper smooth animation? Since the stream has all the key frame information we can use this to create a repeating internal animation of a moving box
 
 ![Segment box](segment-box.gif)
+
+```typescript
+this.loop$.pipe
+(
+  scan( ( [ { futureTime: previousFutureTime } ], [ { futureTime, delta, time },  currentDirection ] ) =>
+  {
+    ...
+    this.box.translateZ( delta * this.size / this.speed );
+    ...
+  }
+)
+```
+
+Now for rotation the trick is to have an inner box then rotate it around some predefined axis based on the current direction. You can see it in the final segment code
+
+![Segment rotation](segment-rotation.gif)

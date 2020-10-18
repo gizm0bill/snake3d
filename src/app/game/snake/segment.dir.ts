@@ -80,7 +80,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
   @Input() index: number;
   @Output() get lookAt()
   {
-    this.cube.getWorldPosition( this._lookAtPosition );
+    this.box.getWorldPosition( this._lookAtPosition );
     return this._lookAtPosition;
   }
 
@@ -97,7 +97,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       Object.assign( (this.innerBox as LineSegments).material,
       {
         depthTest: false,
-        color: new Color(0xFFF2CC),
+        color: new Color(0x006600),
         opacity: .5,
         transparent: true
       } );
@@ -115,12 +115,12 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       const arrowOrigin = vZ.clone().multiplyScalar( this.size / 2 );
       this.outerBox.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
       this.innerBox.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0xAA6600 ) );
-      this.cube.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
+      this.box.add( new ArrowHelper( vZ, arrowOrigin, this.size * .5, 0x66AA00 ) );
       return;
     }
   }
   subLoop$: any;
-  cube: Mesh;
+  box: Mesh;
   private innerBox: Object3D;
   private outerBox: Object3D;
   ngAfterViewInit()
@@ -128,11 +128,11 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
     const geo = cubeGeometry
       ? cubeGeometry.clone()
       : cubeGeometry = createBoxWithRoundedEdges( this.size, this.size, this.size, this.size / 10, 16 );
-    this.cube = new Mesh( geo, new MeshLambertMaterial( { color: 0xCE9421 } ) );
-    this.cube.scale.copy( new Vector3( .75, .75, .75 ) );
-    this.cube.position.setZ( -this.size );
+    this.box = new Mesh( geo, new MeshLambertMaterial( { color: 0xCE9421, transparent: true, opacity: 0.5 } ) );
+    this.box.scale.copy( new Vector3( .75, .75, .75 ) );
+    this.box.position.setZ( -this.size );
     this.setupHelpers();
-    this.innerBox.add( this.cube );
+    this.innerBox.add( this.box );
     this.outerBox.add( this.innerBox );
     this._object = this.outerBox;
   }
@@ -152,24 +152,23 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
       {
         if ( futureTime !== prevFutureTime )
         {
-          // debugger;
           if ( endDirection ) // end rotation
           {
             this.outerBox.position.round();
             this.innerBox.quaternion.copy( quatZero );
             this.innerBox.position.copy( vZero );
-            this.cube.quaternion.copy( quatZero );
-            this.cube.position.copy( vZero ).setZ( -this.size );
+            this.box.quaternion.copy( quatZero );
+            this.box.position.copy( vZero ).setZ( -this.size );
             endDirection = undefined;
           }
-          else this.cube.position.setZ( -this.size );
+          else this.box.position.setZ( -this.size );
           if ( !!currentDirection )
           {
             const [ axis, angle, pivot, cubePos ] = DirectionSpecs[currentDirection];
             this.outerBox.quaternion.multiply( quatZero.clone().setFromAxisAngle( axis, angle ) );
             this.innerBox.position.add( pivot.clone().multiplyScalar( this.size / 2 ) );
-            this.cube.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
-            this.cube.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
+            this.box.position.copy( vZero ).add( cubePos.clone().multiplyScalar( this.size / 2 ) );
+            this.box.quaternion.copy( quatZero.clone().setFromAxisAngle( axis, -angle ) );
             endDirection = [ axis, angle ];
             // TODO: lerp with cube?
             this.rotation$.emit( this.outerBox.quaternion );
@@ -178,7 +177,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
           this.outerBox.translateZ( this.size );
           this.outerBox.updateMatrixWorld(true);
           this.innerBox.updateMatrixWorld(true);
-          this.cube.updateMatrixWorld(true);
+          this.box.updateMatrixWorld(true);
         }
         if ( !!endDirection )
         {
@@ -187,7 +186,7 @@ export class SnakeSegmentDir extends AObject3D<Object3D> implements AfterViewIni
         }
         else
         {
-          this.cube.translateZ( delta * this.size / this.speed );
+          this.box.translateZ( delta * this.size / this.speed );
         }
         return [ { futureTime, delta, time }, endDirection ];
       }, [{ futureTime: performance.now() + this.speed }] )
