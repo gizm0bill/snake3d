@@ -1,4 +1,4 @@
-import { Directive, AfterViewInit, forwardRef, ContentChild, Input } from '@angular/core';
+import { Directive, AfterViewInit, forwardRef, ContentChild } from '@angular/core';
 import { Mesh, MeshBasicMaterial } from 'three';
 import { AObject3D } from '../object-3d';
 import { AMaterial } from '../material';

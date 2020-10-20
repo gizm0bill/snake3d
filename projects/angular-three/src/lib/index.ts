@@ -33,14 +33,14 @@ import * as THREE from 'three';
 } )
 export class AngularThreeMod { }
 
-export * from './constants';
-export * from './object-3d';
-export * from './geometry';
-export * from './material';
-export * from './object';
-export * from './renderer.com';
-export * from './scene.dir';
-export * from './camera';
-export * from './control';
-export * from './light';
-export * from './helper';
+export { vZero, vX, vY, vZ, quatZero, deg90, deg180, deg270, deg360 } from './constants';
+export { AObject3D } from './object-3d';
+export { GeometryMod, BoxBufferGeometryDir, SphereBufferGeometryDir } from './geometry';
+export { MaterialMod, MeshBasicMaterialDir, MeshLambertMaterialDir, MeshPhongMaterialDir, MeshStandardMaterialDir } from './material';
+export { ObjectMod, MeshDir, GroupDir, LineDir, LineSegmentsDir } from './object';
+export { RendererCom } from './renderer.com';
+export { SceneDir } from './scene.dir';
+export { CameraMod, ACamera, PerspectiveCameraDir } from './camera';
+export { ControlMod, OrbitControlsDir } from './control';
+export { LightMod, ALight, AmbientLightDir, PointLightDir } from './light';
+export { HelperMod, AxesHelperDir, GridHelperDir } from './helper';
