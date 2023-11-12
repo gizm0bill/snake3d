@@ -140,7 +140,7 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.subscription.add( this.snakePosition$.subscribe( ( positions ) =>
     {
       snakeHeadBox.setFromCenterAndSize( positions[0], new Vector3( this.snakeSize, this.snakeSize, this.snakeSize ) );
-      console.log( !box.containsBox( snakeHeadBox ) ? 'game over' : positions[0] );
+      // console.log( !box.containsBox( snakeHeadBox ) ? 'game over' : positions[0] );
     } ) );
     this.cdr.detectChanges();
   }

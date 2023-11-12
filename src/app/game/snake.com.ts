@@ -93,7 +93,7 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     const keyFrameDirection$ = combineLatest
     ( [
       this.keyFrameLoop$,
-      this.direction$.asObservable().pipe( switchMap( current => of( ...[ current, null ] ) ) )
+      this.direction.asObservable().pipe( switchMap( current => of( ...[ current, null ] ) ) )
     ] ) .pipe
     (
       scan( ( [ previous, nextDirection ], [ current, currentDirection ] ) =>
@@ -209,23 +209,23 @@ export class SnakeCom extends AObject3D<Group> implements AfterViewInit, OnChang
     this.camera.object.up.copy( vY ).applyQuaternion( quaternion ).normalize();
   }
 
-  private direction$ = new BehaviorSubject<DirectionCommand>( null );
+  private readonly direction = new BehaviorSubject<DirectionCommand>( null );
 
   @HostListener(`${dkd}w`)
   @HostListener(`${dkd}arrowUp`)
-  private arrowUp() { this.direction$.next( DirectionCommand.UP ); }
+  private arrowUp() { this.direction.next( DirectionCommand.UP ); }
 
   @HostListener(`${dkd}s`)
   @HostListener(`${dkd}arrowDown`)
-  private arrowDown() { this.direction$.next( DirectionCommand.DOWN ); }
+  private arrowDown() { this.direction.next( DirectionCommand.DOWN ); }
 
   @HostListener(`${dkd}a`)
   @HostListener(`${dkd}arrowLeft`)
-  private arrowLeft() { this.direction$.next( DirectionCommand.LEFT ); }
+  private arrowLeft() { this.direction.next( DirectionCommand.LEFT ); }
 
   @HostListener(`${dkd}d`)
   @HostListener(`${dkd}arrowRight`)
-  private arrowRight() { this.direction$.next( DirectionCommand.RIGHT ); }
+  private arrowRight() { this.direction.next( DirectionCommand.RIGHT ); }
 
   void() {}
   log( ...args: any[] ) { console.log('…snake…', ...args); }

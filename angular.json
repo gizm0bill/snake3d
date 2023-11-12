@@ -185,7 +185,6 @@
       }
     }
   },
-  "defaultProject": "snake3d",
   "cli": {
     "analytics": false
   }
