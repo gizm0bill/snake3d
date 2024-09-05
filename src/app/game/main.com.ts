@@ -42,7 +42,7 @@ export class MainCom implements OnDestroy, AfterViewInit
   }
 
   // simple seconds counter
-  public seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
+  seconds$ = zip( range(0, 60), interval( 1000 ) ).pipe( map( ( [ i ] ) => i + 1 ), repeat(),  );
 
   @ViewChild(RendererCom) childRenderer: RendererCom;
   @ViewChild(PerspectiveCameraDir) camera: PerspectiveCameraDir;
@@ -58,9 +58,9 @@ export class MainCom implements OnDestroy, AfterViewInit
   snakeLength = 3;
   snakeSize = 1;
   snakeSpeed = 1000;
-  private applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
+  #applePosition = new BehaviorSubject<Vector3>( vZ.clone().multiplyScalar( this.snakeSize * 2 ) );
 
-  applePosition$ = this.applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
+  applePosition$ = this.#applePosition.asObservable().pipe( delay( this.snakeSpeed / 2, animationFrameScheduler ) );
 
   @HostListener( 'window:resize', ['$event'] )
   onWindowResize( event: any ) { this.childRenderer.onResize( event ); }
@@ -120,12 +120,12 @@ export class MainCom implements OnDestroy, AfterViewInit
     this.mouseMove( document.body.clientWidth / 2, document.body.clientHeight * .33 );
     this.apple$ = this.snakePosition$.pipe
     (
-      filter( ( snakePositions ) => this.applePosition.value.equals( snakePositions[0] ) ),
+      filter( ( snakePositions ) => this.#applePosition.value.equals( snakePositions[0] ) ),
       // tap( _ => this.applePosition.next( this.applePosition.value.clone().add( vZ.clone().multiplyScalar( this.snakeSize * 10 ) ) ) ),
       tap( ( snakePositions ) =>
       {
         const newApple = this.randomApplePosition( snakePositions );
-        this.applePosition.next( newApple );
+        this.#applePosition.next( newApple );
         // TODO: increase score
         // this.eatenApples.push( this.snakePosition[0].clone() );
       } ),
